@@ -33,6 +33,7 @@ import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldEvents;
 import org.jetbrains.annotations.Nullable;
 import org.jspecify.annotations.NonNull;
 
@@ -121,6 +122,19 @@ public class ItemPipeBlock extends Block implements BlockEntityProvider {
     @Override
     public BlockEntity createBlockEntity(BlockPos pos, BlockState state) {
         return new ItemPipeBlockEntity(pos, state);
+    }
+
+    @Override
+    public void afterBreak(World world, PlayerEntity player, BlockPos pos, BlockState state, @Nullable BlockEntity blockEntity, ItemStack tool) {
+        super.afterBreak(world, player, pos, state, blockEntity, tool);
+
+        if (blockEntity instanceof ItemPipeBlockEntity be) {
+            for (Direction dir : Direction.values()) {
+                if (be.hasServo(dir)) {
+                    dropServo(world, pos, dir);
+                }
+            }
+        }
     }
 
     @Override
