@@ -14,11 +14,15 @@ import net.minecraft.util.math.BlockPos;
 public class ServoScreen extends HandledScreen<ServoMenu> {
 
     private static final Identifier TEXTURE = Identifier.of("steampunk-era", "textures/gui/servo_gui.png");
+    private static final Identifier TORCH_ON = Identifier.of("steampunk-era", "textures/gui/redstone_torch_lit.png");
+    private static final Identifier TORCH_OFF = Identifier.of("steampunk-era", "textures/gui/redstone_torch_unlit.png");
     private static final int TEXTURE_RESOLUTION = 256;
-    private static final int BUTTON_X_OFFSET = 8;
+    private static final int BUTTON_X_OFFSET = 22;
     private static final int BUTTON_Y_OFFSET = 16;
     private static final int BUTTON_WIDTH = 40;
     private static final int BUTTON_HEIGHT = 16;
+    private static final int TORCH_SIZE = 16;
+    private static final int TORCH_X_OFFSET = 8;
     private static final int BACKGROUND_WIDTH = 176;
     private static final int BACKGROUND_HEIGHT = 166;
     private static final int PLAYER_INVENTORY_TITLE_Y_OFFSET = 94;
@@ -61,6 +65,11 @@ public class ServoScreen extends HandledScreen<ServoMenu> {
         int x = (this.width - this.backgroundWidth) / 2;
         int y = (this.height - this.backgroundHeight) / 2;
         context.drawTexture(RenderPipelines.GUI_TEXTURED, TEXTURE, x, y, 0f, 0f, this.backgroundWidth, this.backgroundHeight, TEXTURE_RESOLUTION, TEXTURE_RESOLUTION);
+
+        int torchX = x + TORCH_X_OFFSET;
+        int torchY = y + BUTTON_Y_OFFSET - 2;
+        Identifier torchTexture = enabled ? TORCH_ON : TORCH_OFF;
+        context.drawTexture(RenderPipelines.GUI_TEXTURED, torchTexture, torchX, torchY, 0, 0, TORCH_SIZE, TORCH_SIZE, TORCH_SIZE, TORCH_SIZE);
     }
 
     public void updateButton(boolean enabled) {
