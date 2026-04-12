@@ -17,10 +17,13 @@ import net.minecraft.item.BlockItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemGroup;
 import net.minecraft.item.ItemStack;
+import net.minecraft.component.ComponentType;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import net.minecraft.world.chunk.WorldChunk;
@@ -37,6 +40,18 @@ public class SteampunkEra implements ModInitializer {
 	public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
 	public static final Set<ItemPipeBlockEntity> TICKING_PIPES = ConcurrentHashMap.newKeySet();
+
+	public static final ComponentType<NbtCompound> PIPE_DATA_COMPONENT = Registry.register(
+			Registries.DATA_COMPONENT_TYPE,
+			id("pipe_data"),
+			ComponentType.<NbtCompound>builder()
+					.codec(NbtCompound.CODEC)
+					.packetCodec(net.minecraft.network.codec.PacketCodec.of(
+							(nbt, buf) -> buf.writeNbt(nbt),
+							buf -> buf.readNbt()
+					))
+					.build()
+	);
 
 	public static final Item WRENCH = Registry.register(
 			Registries.ITEM,
@@ -100,7 +115,6 @@ public class SteampunkEra implements ModInitializer {
 	@Override
 	public void onInitialize() {
 		LOGGER.info("Hello Fabric world!");
-		SteampunkEraAttachments.init();
 		ServoMenuData.init();
 		ServoPayload.register();
 
@@ -108,25 +122,9 @@ public class SteampunkEra implements ModInitializer {
 			TICKING_PIPES.clear();
 		});
 
-		ServerChunkEvents.CHUNK_LOAD.register((ServerWorld world, WorldChunk chunk) -> {
-			for (var be : chunk.getBlockEntities().values()) {
-				if (be instanceof ItemPipeBlockEntity pipeBE) {
-					TICKING_PIPES.add(pipeBE);
-				}
-			}
-		});
-
-		ServerChunkEvents.CHUNK_UNLOAD.register((ServerWorld world, WorldChunk chunk) -> {
-			for (var be : chunk.getBlockEntities().values()) {
-				if (be instanceof ItemPipeBlockEntity pipeBE) {
-					TICKING_PIPES.remove(pipeBE);
-				}
-			}
-		});
-
-		ServerTickEvents.END_WORLD_TICK.register((ServerWorld world) -> {
+		ServerTickEvents.START_SERVER_TICK.register((MinecraftServer server) -> {
 			for (ItemPipeBlockEntity pipeBE : TICKING_PIPES) {
-				pipeBE.tick(world);
+				pipeBE.tick(server.getOverworld());
 			}
 		});
 	}

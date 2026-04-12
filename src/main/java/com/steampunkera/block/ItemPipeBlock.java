@@ -16,8 +16,8 @@ import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.item.ItemStack;
 import net.minecraft.item.ItemPlacementContext;
+import net.minecraft.item.ItemStack;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.state.StateManager;
@@ -34,7 +34,6 @@ import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
-import net.minecraft.world.WorldEvents;
 import org.jetbrains.annotations.Nullable;
 import org.jspecify.annotations.NonNull;
 
@@ -140,7 +139,6 @@ public class ItemPipeBlock extends Block implements BlockEntityProvider {
 
     @Override
     protected ActionResult onUseWithItem(ItemStack stack, BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
-        // Не обрабатываем, если в руке ключ
         if (stack.getItem() instanceof WrenchItem) {
             return ActionResult.PASS;
         }
@@ -252,9 +250,6 @@ public class ItemPipeBlock extends Block implements BlockEntityProvider {
         }
     }
 
-    /**
-     * Обновляет только свойства сервоприводов в BlockState.
-     */
     public void updateServoState(World world, BlockPos pos) {
         BlockState currentState = world.getBlockState(pos);
         if (world.getBlockEntity(pos) instanceof ItemPipeBlockEntity be) {
