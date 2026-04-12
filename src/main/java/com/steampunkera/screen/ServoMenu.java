@@ -14,15 +14,20 @@ public class ServoMenu extends ScreenHandler {
     private final BlockPos pos;
     private boolean enabled;
 
-    public ServoMenu(int syncId, PlayerInventory playerInventory) {
-        this(syncId, playerInventory, null, true);
+    // Клиентский конструктор (вызывается через ExtendedScreenHandlerType)
+    public ServoMenu(int syncId, PlayerInventory playerInventory, BlockPos pos, boolean enabled) {
+        super(ServoMenuData.SERVO_MENU_TYPE, syncId);
+        this.pos = pos;
+        this.enabled = enabled;
+        this.addPlayerInventorySlots(playerInventory, 8, 84);
+        this.addPlayerHotbarSlots(playerInventory, 8, 142);
     }
 
+    // Серверный конструктор (вызывается из BlockEntity)
     public ServoMenu(int syncId, PlayerInventory playerInventory, @Nullable ItemPipeBlockEntity blockEntity, boolean enabled) {
         super(ServoMenuData.SERVO_MENU_TYPE, syncId);
         this.pos = blockEntity != null ? blockEntity.getPos() : BlockPos.ORIGIN;
         this.enabled = enabled;
-
         this.addPlayerInventorySlots(playerInventory, 8, 84);
         this.addPlayerHotbarSlots(playerInventory, 8, 142);
     }

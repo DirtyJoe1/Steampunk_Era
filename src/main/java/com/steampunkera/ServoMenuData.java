@@ -1,18 +1,32 @@
 package com.steampunkera;
 
 import com.steampunkera.screen.ServoMenu;
+import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerType;
+import net.minecraft.network.RegistryByteBuf;
+import net.minecraft.network.codec.PacketCodec;
+import net.minecraft.network.codec.PacketCodecs;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
-import net.minecraft.resource.featuretoggle.FeatureFlags;
-import net.minecraft.screen.ScreenHandlerType;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.BlockPos;
 
 public final class ServoMenuData {
 
-    public static final ScreenHandlerType<ServoMenu> SERVO_MENU_TYPE = Registry.register(
+    public record ServoData(BlockPos pos, boolean enabled) {
+        public static final PacketCodec<RegistryByteBuf, ServoData> PACKET_CODEC = PacketCodec.tuple(
+                BlockPos.PACKET_CODEC, ServoData::pos,
+                PacketCodecs.BOOLEAN, ServoData::enabled,
+                ServoData::new
+        );
+    }
+
+    public static final ExtendedScreenHandlerType<ServoMenu, ServoData> SERVO_MENU_TYPE = Registry.register(
             Registries.SCREEN_HANDLER,
             id("servo_menu"),
-            new ScreenHandlerType<>(ServoMenu::new, FeatureFlags.VANILLA_FEATURES)
+            new ExtendedScreenHandlerType<>(
+                    (syncId, inventory, data) -> new ServoMenu(syncId, inventory, data.pos(), data.enabled()),
+                    ServoData.PACKET_CODEC
+            )
     );
 
     private static Identifier id(String path) {
@@ -20,6 +34,6 @@ public final class ServoMenuData {
     }
 
     public static void init() {
-        ScreenHandlerType<?> dummy = SERVO_MENU_TYPE;
+        ExtendedScreenHandlerType<?, ?> dummy = SERVO_MENU_TYPE;
     }
 }

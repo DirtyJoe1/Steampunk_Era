@@ -1,10 +1,11 @@
 package com.steampunkera.block;
 
-import com.steampunkera.ServoMenuData;
+import com.steampunkera.ServoMenuData.ServoData;
 import com.steampunkera.block.entity.ItemPipeBlockEntity;
 import com.steampunkera.item.WrenchItem;
 import com.steampunkera.screen.ServoMenu;
 import com.steampunkera.util.PipeHelper;
+import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockEntityProvider;
 import net.minecraft.block.BlockState;
@@ -14,8 +15,8 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
-import net.minecraft.screen.NamedScreenHandlerFactory;
 import net.minecraft.screen.ScreenHandler;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.Properties;
@@ -30,6 +31,7 @@ import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.NonNull;
 
 public class ItemPipeBlock extends Block implements BlockEntityProvider {
 
@@ -134,7 +136,8 @@ public class ItemPipeBlock extends Block implements BlockEntityProvider {
 
             if (be.hasServo(side)) {
                 boolean enabled = be.getAttachedOrCreate(com.steampunkera.SteampunkEraAttachments.SERVO_ACTIVE);
-                player.openHandledScreen(new NamedScreenHandlerFactory() {
+
+                player.openHandledScreen(new ExtendedScreenHandlerFactory<ServoData>() {
                     @Override
                     public Text getDisplayName() {
                         return Text.literal("Servo");
@@ -143,6 +146,11 @@ public class ItemPipeBlock extends Block implements BlockEntityProvider {
                     @Override
                     public ScreenHandler createMenu(int syncId, PlayerInventory inv, PlayerEntity p) {
                         return new ServoMenu(syncId, inv, be, enabled);
+                    }
+
+                    @Override
+                    public @NonNull ServoData getScreenOpeningData(@NonNull ServerPlayerEntity player) {
+                        return new ServoData(pos, enabled);
                     }
                 });
                 return ActionResult.SUCCESS;
