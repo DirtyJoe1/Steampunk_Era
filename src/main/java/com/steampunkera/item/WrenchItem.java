@@ -74,6 +74,7 @@ public class WrenchItem extends Item {
 
         if (blockEntity.hasServo(side)) {
             blockEntity.setServo(side, false);
+            blockEntity.setServoActive(side, true); // Сброс состояния при снятии
             dropItem(world, pos, new ItemStack(SteampunkEra.SERVOS_ITEM, 1));
             world.playSound(null, pos, SoundEvents.BLOCK_METAL_PLACE, SoundCategory.BLOCKS, 1.0f, 1.0f);
             player.sendMessage(Text.literal("Servo dismantled"), true);

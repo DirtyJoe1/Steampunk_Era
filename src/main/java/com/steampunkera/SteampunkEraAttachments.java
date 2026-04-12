@@ -4,7 +4,6 @@ import com.steampunkera.block.ItemPipeBlock;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.fabricmc.fabric.api.attachment.v1.AttachmentRegistry;
-import net.fabricmc.fabric.api.attachment.v1.AttachmentSyncPredicate;
 import net.fabricmc.fabric.api.attachment.v1.AttachmentType;
 import net.minecraft.network.RegistryByteBuf;
 import net.minecraft.network.codec.PacketCodec;
@@ -22,16 +21,18 @@ import java.util.Map;
 public final class SteampunkEraAttachments {
 
     /**
-     * Данные о disabled-соединениях и сервоприводах для трубы.
+     * Данные о disabled-соединениях, сервоприводах и их состоянии для трубы.
      */
     public record PipeData(
             Map<Direction, Boolean> disabledConnections,
-            Map<Direction, Boolean> servoAttachments
+            Map<Direction, Boolean> servoAttachments,
+            Map<Direction, Boolean> servoActive
     ) {
         public static final Codec<PipeData> CODEC = RecordCodecBuilder.create(instance ->
                 instance.group(
                         directionBoolMapCodec().fieldOf("disabled").forGetter(PipeData::disabledConnections),
-                        directionBoolMapCodec().fieldOf("servos").forGetter(PipeData::servoAttachments)
+                        directionBoolMapCodec().fieldOf("servos").forGetter(PipeData::servoAttachments),
+                        directionBoolMapCodec().fieldOf("servo_active").forGetter(PipeData::servoActive)
                 ).apply(instance, PipeData::new)
         );
 
@@ -40,17 +41,21 @@ public final class SteampunkEraAttachments {
                 PipeData::disabledConnections,
                 PacketCodecs.map(HashMap::new, DirectionPacketCodec.INSTANCE, PacketCodecs.BOOLEAN),
                 PipeData::servoAttachments,
+                PacketCodecs.map(HashMap::new, DirectionPacketCodec.INSTANCE, PacketCodecs.BOOLEAN),
+                PipeData::servoActive,
                 PipeData::new
         );
 
         public static PipeData empty() {
             Map<Direction, Boolean> disabled = new EnumMap<>(Direction.class);
             Map<Direction, Boolean> servos = new EnumMap<>(Direction.class);
+            Map<Direction, Boolean> active = new EnumMap<>(Direction.class);
             for (Direction dir : Direction.values()) {
                 disabled.put(dir, false);
                 servos.put(dir, false);
+                active.put(dir, true);
             }
-            return new PipeData(disabled, servos);
+            return new PipeData(disabled, servos, active);
         }
 
         public boolean isDisabled(Direction dir) {
@@ -61,16 +66,26 @@ public final class SteampunkEraAttachments {
             return servoAttachments.getOrDefault(dir, false);
         }
 
+        public boolean isServoActive(Direction dir) {
+            return servoActive.getOrDefault(dir, true);
+        }
+
         public PipeData withDisabled(Direction dir, boolean value) {
             Map<Direction, Boolean> newMap = new EnumMap<>(disabledConnections);
             newMap.put(dir, value);
-            return new PipeData(newMap, servoAttachments);
+            return new PipeData(newMap, servoAttachments, servoActive);
         }
 
         public PipeData withServo(Direction dir, boolean value) {
             Map<Direction, Boolean> newMap = new EnumMap<>(servoAttachments);
             newMap.put(dir, value);
-            return new PipeData(disabledConnections, newMap);
+            return new PipeData(disabledConnections, newMap, servoActive);
+        }
+
+        public PipeData withServoActive(Direction dir, boolean value) {
+            Map<Direction, Boolean> newMap = new EnumMap<>(servoActive);
+            newMap.put(dir, value);
+            return new PipeData(disabledConnections, servoAttachments, newMap);
         }
     }
 
@@ -108,25 +123,13 @@ public final class SteampunkEraAttachments {
     }
 
     /**
-     * Аттачмент для хранения данных трубы (disabled + servo).
+     * Аттачмент для хранения данных трубы (disabled + servo + servo active).
      */
     public static final AttachmentType<PipeData> PIPE_DATA = AttachmentRegistry.create(
             id("pipe_data"),
             builder -> builder
                     .initializer(PipeData::empty)
                     .persistent(PipeData.CODEC)
-                    .syncWith(PipeData.PACKET_CODEC, AttachmentSyncPredicate.all())
-    );
-
-    /**
-     * Состояние кнопки сервопривода (вкл/выкл).
-     */
-    public static final AttachmentType<Boolean> SERVO_ACTIVE = AttachmentRegistry.create(
-            id("servo_active"),
-            builder -> builder
-                    .initializer(() -> true)
-                    .persistent(Codec.BOOL)
-                    .syncWith(PacketCodecs.BOOLEAN, AttachmentSyncPredicate.all())
     );
 
     private static Identifier id(String path) {
@@ -137,7 +140,6 @@ public final class SteampunkEraAttachments {
      * Вызывается из SteampunkEra.onInitialize() для регистрации аттачментов.
      */
     public static void init() {
-        // Принудительная инициализация PIPE_DATA
         AttachmentType<?> dummy = PIPE_DATA;
     }
 }

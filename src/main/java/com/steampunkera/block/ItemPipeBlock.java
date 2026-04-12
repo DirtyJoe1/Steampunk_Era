@@ -1,6 +1,7 @@
 package com.steampunkera.block;
 
 import com.steampunkera.ServoMenuData.ServoData;
+import com.steampunkera.SteampunkEra;
 import com.steampunkera.block.entity.ItemPipeBlockEntity;
 import com.steampunkera.item.WrenchItem;
 import com.steampunkera.screen.ServoMenu;
@@ -11,10 +12,11 @@ import net.minecraft.block.BlockEntityProvider;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.ShapeContext;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.state.StateManager;
@@ -26,6 +28,7 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
@@ -135,7 +138,7 @@ public class ItemPipeBlock extends Block implements BlockEntityProvider {
             Direction side = PipeHelper.getDirectionFromHitPos(hit.getPos(), pos);
 
             if (be.hasServo(side)) {
-                boolean enabled = be.getAttachedOrCreate(com.steampunkera.SteampunkEraAttachments.SERVO_ACTIVE);
+                boolean enabled = be.isServoActive(side);
 
                 player.openHandledScreen(new ExtendedScreenHandlerFactory<ServoData>() {
                     @Override
@@ -145,12 +148,12 @@ public class ItemPipeBlock extends Block implements BlockEntityProvider {
 
                     @Override
                     public ScreenHandler createMenu(int syncId, PlayerInventory inv, PlayerEntity p) {
-                        return new ServoMenu(syncId, inv, be, enabled);
+                        return new ServoMenu(syncId, inv, be, side, enabled);
                     }
 
                     @Override
                     public @NonNull ServoData getScreenOpeningData(@NonNull ServerPlayerEntity player) {
-                        return new ServoData(pos, enabled);
+                        return new ServoData(pos, side, enabled);
                     }
                 });
                 return ActionResult.SUCCESS;
@@ -197,12 +200,31 @@ public class ItemPipeBlock extends Block implements BlockEntityProvider {
         for (Direction dir : Direction.values()) {
             newState = newState.with(getPropertyForDirection(dir), canConnectTo(world, pos, dir));
         }
-        if (world.getBlockEntity(pos) instanceof ItemPipeBlockEntity be) {
+        if (world.getBlockEntity(pos) instanceof ItemPipeBlockEntity pipeBE) {
             for (Direction dir : Direction.values()) {
-                newState = newState.with(getServoPropertyForDirection(dir), be.hasServo(dir));
+                newState = newState.with(getServoPropertyForDirection(dir), pipeBE.hasServo(dir));
+                // Если сервопривод есть, но соединение потеряно — выпадает
+                if (pipeBE.hasServo(dir) && !PipeHelper.isInventoryNotAPipe(world.getBlockState(pos.offset(dir)).getBlock())) {
+                    dropServo(world, pos, dir);
+                    pipeBE.setServo(dir, false);
+                    pipeBE.setServoActive(dir, true);
+                }
             }
         }
         return newState;
+    }
+
+    private void dropServo(World world, BlockPos pos, Direction dir) {
+        if (!world.isClient()) {
+            Vec3d dropPos = Vec3d.ofCenter(pos).offset(dir, 0.5);
+            ItemEntity itemEntity = new ItemEntity(world, dropPos.x, dropPos.y, dropPos.z, new ItemStack(SteampunkEra.SERVOS_ITEM));
+            itemEntity.setVelocity(
+                    (world.random.nextDouble() - 0.5) * 0.1,
+                    0.2,
+                    (world.random.nextDouble() - 0.5) * 0.1
+            );
+            world.spawnEntity(itemEntity);
+        }
     }
 
     /**

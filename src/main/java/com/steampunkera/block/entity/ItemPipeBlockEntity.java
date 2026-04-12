@@ -49,6 +49,14 @@ public class ItemPipeBlockEntity extends BlockEntity {
         updateServoState();
     }
 
+    public boolean isServoActive(Direction direction) {
+        return getData().isServoActive(direction);
+    }
+
+    public void setServoActive(Direction direction, boolean active) {
+        modifyData(data -> data.withServoActive(direction, active));
+    }
+
     private void updateServoState() {
         if (world != null && !world.isClient() && world.getBlockEntity(pos) == this) {
             if (getCachedState().getBlock() instanceof ItemPipeBlock pipeBlock) {

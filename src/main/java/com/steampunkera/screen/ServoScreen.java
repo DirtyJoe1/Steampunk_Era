@@ -53,7 +53,7 @@ public class ServoScreen extends HandledScreen<ServoMenu> {
         enabled = !enabled;
         handler.setEnabled(enabled);
         toggleButton.setMessage(Text.literal(enabled ? "ON" : "OFF"));
-        ClientPlayNetworking.send(new ServoTogglePayload(handler.getPos(), enabled));
+        ClientPlayNetworking.send(new ServoTogglePayload(handler.getPos(), handler.getServoSide(), enabled));
     }
 
     @Override

@@ -9,12 +9,14 @@ import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
 
 public final class ServoMenuData {
 
-    public record ServoData(BlockPos pos, boolean enabled) {
+    public record ServoData(BlockPos pos, Direction servoSide, boolean enabled) {
         public static final PacketCodec<RegistryByteBuf, ServoData> PACKET_CODEC = PacketCodec.tuple(
                 BlockPos.PACKET_CODEC, ServoData::pos,
+                PacketCodecs.indexed(i -> Direction.values()[i], Direction::ordinal), ServoData::servoSide,
                 PacketCodecs.BOOLEAN, ServoData::enabled,
                 ServoData::new
         );
@@ -24,7 +26,7 @@ public final class ServoMenuData {
             Registries.SCREEN_HANDLER,
             id("servo_menu"),
             new ExtendedScreenHandlerType<>(
-                    (syncId, inventory, data) -> new ServoMenu(syncId, inventory, data.pos(), data.enabled()),
+                    (syncId, inventory, data) -> new ServoMenu(syncId, inventory, data.pos(), data.servoSide(), data.enabled()),
                     ServoData.PACKET_CODEC
             )
     );
