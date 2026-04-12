@@ -112,13 +112,8 @@ public class WrenchItem extends Item {
     }
 
     private void updatePipeConnections(World world, BlockPos pos) {
-        for (Direction dir : Direction.values()) {
-            BlockPos neighborPos = pos.offset(dir);
-            BlockState neighborState = world.getBlockState(neighborPos);
-            if (neighborState.getBlock() instanceof ItemPipeBlock) {
-                world.updateNeighbor(neighborPos, neighborState.getBlock(), null);
-            }
+        if (world.getBlockState(pos).getBlock() instanceof ItemPipeBlock pipeBlock) {
+            pipeBlock.refreshConnections(world, pos);
         }
-        world.updateNeighbor(pos, world.getBlockState(pos).getBlock(), null);
     }
 }

@@ -6,15 +6,11 @@ import com.steampunkera.SteampunkEraAttachments.PipeData;
 import com.steampunkera.block.ItemPipeBlock;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.network.listener.ClientPlayPacketListener;
-import net.minecraft.network.packet.Packet;
-import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
-import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
-import org.jetbrains.annotations.Nullable;
+
+import java.util.function.UnaryOperator;
 
 public class ItemPipeBlockEntity extends BlockEntity {
 
@@ -30,28 +26,26 @@ public class ItemPipeBlockEntity extends BlockEntity {
         setAttached(SteampunkEraAttachments.PIPE_DATA, data);
     }
 
+    private void modifyData(UnaryOperator<PipeData> modifier) {
+        setData(modifier.apply(getData()));
+        markDirty();
+    }
 
     public boolean isDisabled(Direction direction) {
         return getData().isDisabled(direction);
     }
 
-
     public void toggleDisabled(Direction direction) {
-        PipeData current = getData();
-        setData(current.withDisabled(direction, !current.isDisabled(direction)));
-        markDirty();
+        modifyData(data -> data.withDisabled(direction, !data.isDisabled(direction)));
         updateBlockState();
     }
-
 
     public boolean hasServo(Direction direction) {
         return getData().hasServo(direction);
     }
 
     public void setServo(Direction direction, boolean hasServo) {
-        PipeData current = getData();
-        setData(current.withServo(direction, hasServo));
-        markDirty();
+        modifyData(data -> data.withServo(direction, hasServo));
         updateServoState();
     }
 

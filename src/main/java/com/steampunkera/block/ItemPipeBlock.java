@@ -173,37 +173,35 @@ public class ItemPipeBlock extends Block implements BlockEntityProvider {
         refreshConnections(world, pos);
     }
 
-    private void refreshConnections(World world, BlockPos pos) {
+    public void refreshConnections(World world, BlockPos pos) {
         BlockState currentState = world.getBlockState(pos);
-        BlockState newState = updateConnections(world, pos, currentState);
+        BlockState newState = updateAllConnections(world, pos, currentState);
         world.setBlockState(pos, newState, 3);
 
         for (Direction dir : Direction.values()) {
             BlockPos neighborPos = pos.offset(dir);
             BlockState neighborState = world.getBlockState(neighborPos);
             if (neighborState.getBlock() instanceof ItemPipeBlock) {
-                BlockState updatedNeighbor = updateConnections(world, neighborPos, neighborState);
+                BlockState updatedNeighbor = updateAllConnections(world, neighborPos, neighborState);
                 world.setBlockState(neighborPos, updatedNeighbor, 3);
             }
         }
     }
 
     private BlockState updateConnections(World world, BlockPos pos, BlockState existingState) {
-        BlockState newState = existingState
-                .with(NORTH, canConnectTo(world, pos, Direction.NORTH))
-                .with(SOUTH, canConnectTo(world, pos, Direction.SOUTH))
-                .with(EAST, canConnectTo(world, pos, Direction.EAST))
-                .with(WEST, canConnectTo(world, pos, Direction.WEST))
-                .with(UP, canConnectTo(world, pos, Direction.UP))
-                .with(DOWN, canConnectTo(world, pos, Direction.DOWN));
+        return updateAllConnections(world, pos, existingState);
+    }
 
-        // Обновляем свойства сервоприводов из BlockEntity
+    private BlockState updateAllConnections(World world, BlockPos pos, BlockState existingState) {
+        BlockState newState = existingState;
+        for (Direction dir : Direction.values()) {
+            newState = newState.with(getPropertyForDirection(dir), canConnectTo(world, pos, dir));
+        }
         if (world.getBlockEntity(pos) instanceof ItemPipeBlockEntity be) {
             for (Direction dir : Direction.values()) {
                 newState = newState.with(getServoPropertyForDirection(dir), be.hasServo(dir));
             }
         }
-
         return newState;
     }
 

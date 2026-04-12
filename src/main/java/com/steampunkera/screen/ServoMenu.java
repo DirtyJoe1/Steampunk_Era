@@ -7,29 +7,24 @@ import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.util.math.BlockPos;
-import org.jetbrains.annotations.Nullable;
 
 public class ServoMenu extends ScreenHandler {
-
+    private static final int INVENTORY_X = 8;
+    private static final int INVENTORY_Y = 84;
+    private static final int HOTBAR_Y = 142;
     private final BlockPos pos;
     private boolean enabled;
 
-    // Клиентский конструктор (вызывается через ExtendedScreenHandlerType)
     public ServoMenu(int syncId, PlayerInventory playerInventory, BlockPos pos, boolean enabled) {
         super(ServoMenuData.SERVO_MENU_TYPE, syncId);
         this.pos = pos;
         this.enabled = enabled;
-        this.addPlayerInventorySlots(playerInventory, 8, 84);
-        this.addPlayerHotbarSlots(playerInventory, 8, 142);
+        this.addPlayerInventorySlots(playerInventory, INVENTORY_X, INVENTORY_Y);
+        this.addPlayerHotbarSlots(playerInventory, INVENTORY_X, HOTBAR_Y);
     }
 
-    // Серверный конструктор (вызывается из BlockEntity)
-    public ServoMenu(int syncId, PlayerInventory playerInventory, @Nullable ItemPipeBlockEntity blockEntity, boolean enabled) {
-        super(ServoMenuData.SERVO_MENU_TYPE, syncId);
-        this.pos = blockEntity != null ? blockEntity.getPos() : BlockPos.ORIGIN;
-        this.enabled = enabled;
-        this.addPlayerInventorySlots(playerInventory, 8, 84);
-        this.addPlayerHotbarSlots(playerInventory, 8, 142);
+    public ServoMenu(int syncId, PlayerInventory playerInventory, ItemPipeBlockEntity blockEntity, boolean enabled) {
+        this(syncId, playerInventory, blockEntity != null ? blockEntity.getPos() : BlockPos.ORIGIN, enabled);
     }
 
     @Override

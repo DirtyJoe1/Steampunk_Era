@@ -15,7 +15,7 @@ import net.minecraft.network.packet.CustomPayload;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 
-public final class ServoTogglePayload implements CustomPayload {
+public record ServoTogglePayload(BlockPos pos, boolean enabled) implements CustomPayload {
 
     public static final Id<ServoTogglePayload> ID = new Id<>(Identifier.of(SteampunkEra.MOD_ID, "servo_toggle"));
     public static final PacketCodec<RegistryByteBuf, ServoTogglePayload> CODEC = PacketCodec.tuple(
@@ -23,17 +23,6 @@ public final class ServoTogglePayload implements CustomPayload {
             PacketCodecs.BOOLEAN, ServoTogglePayload::enabled,
             ServoTogglePayload::new
     );
-
-    private final BlockPos pos;
-    private final boolean enabled;
-
-    public ServoTogglePayload(BlockPos pos, boolean enabled) {
-        this.pos = pos;
-        this.enabled = enabled;
-    }
-
-    public BlockPos pos() { return pos; }
-    public boolean enabled() { return enabled; }
 
     @Override
     public Id<? extends CustomPayload> getId() {
@@ -58,26 +47,13 @@ public final class ServoTogglePayload implements CustomPayload {
         PayloadTypeRegistry.playS2C().register(ServoStatePayload.ID, ServoStatePayload.CODEC);
         ClientPlayNetworking.registerGlobalReceiver(ServoStatePayload.ID, (payload, context) ->
                 context.client().execute(() -> {
-            if (context.player().currentScreenHandler instanceof ServoMenu menu) {
-                menu.setEnabled(payload.enabled());
-                if (context.client().currentScreen instanceof ServoScreen screen) {
-                    screen.updateButton(payload.enabled());
-                }
-            }
-        }));
-    }
-
-    public record ServoStatePayload(BlockPos pos, boolean enabled) implements CustomPayload {
-        public static final Id<ServoStatePayload> ID = new Id<>(Identifier.of(SteampunkEra.MOD_ID, "servo_state"));
-        public static final PacketCodec<RegistryByteBuf, ServoStatePayload> CODEC = PacketCodec.tuple(
-                BlockPos.PACKET_CODEC, ServoStatePayload::pos,
-                PacketCodecs.BOOLEAN, ServoStatePayload::enabled,
-                ServoStatePayload::new
+                    if (context.player().currentScreenHandler instanceof ServoMenu menu) {
+                        menu.setEnabled(payload.enabled());
+                        if (context.client().currentScreen instanceof ServoScreen screen) {
+                            screen.updateButton(payload.enabled());
+                        }
+                    }
+                })
         );
-
-        @Override
-        public Id<? extends CustomPayload> getId() {
-            return ID;
-        }
     }
 }
