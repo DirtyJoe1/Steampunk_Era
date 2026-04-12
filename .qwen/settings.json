@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(gradlew *)",
+      "WebSearch",
+      "WebFetch(github.com)",
+      "WebFetch(www.reddit.com)",
+      "Bash(gradlew.bat *)",
+      "Read(C:\\Users\\DirtyJoe\\Downloads/**)",
+      "Bash(select-object *)",
+      "Bash(del *)",
+      "Bash(powershell *)",
+      "Bash(cmd *)",
+      "Bash(node *)",
+      "Bash(timeout *)",
+      "Bash(ping *)"
+    ]
+  },
+  "$version": 3
+}

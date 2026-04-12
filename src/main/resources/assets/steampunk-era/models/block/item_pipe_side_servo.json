@@ -1,0 +1,33 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "pipe": "minecraft:block/iron_block",
+    "servo": "steampunk-era:block/servo"
+  },
+  "elements": [
+    {
+      "from": [5, 11, 5],
+      "to": [11, 14, 11],
+      "faces": {
+        "north": {"uv": [5, 0, 11, 5], "texture": "#pipe"},
+        "south": {"uv": [5, 0, 11, 5], "texture": "#pipe"},
+        "east": {"uv": [5, 0, 11, 5], "texture": "#pipe"},
+        "west": {"uv": [5, 0, 11, 5], "texture": "#pipe"},
+        "up": {"uv": [5, 5, 11, 11], "texture": "#pipe"}
+      }
+    },
+    {
+      "comment": "Servo body — sits on top of the pipe arm",
+      "from": [4, 14, 4],
+      "to": [12, 16, 12],
+      "faces": {
+        "north": {"uv": [4, 6, 12, 8], "texture": "#servo"},
+        "south": {"uv": [4, 6, 12, 8], "texture": "#servo"},
+        "east": {"uv": [4, 6, 12, 8], "texture": "#servo"},
+        "west": {"uv": [4, 6, 12, 8], "texture": "#servo"},
+        "up": {"uv": [4, 4, 12, 12], "texture": "#servo"},
+        "down": {"uv": [4, 4, 12, 12], "texture": "#servo"}
+      }
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "block.steampunk-era.item_pipe": "Item Pipe",
+  "item.steampunk-era.item_pipe": "Item Pipe",
+  "item.steampunk-era.wrench": "Wrench",
+  "item.steampunk-era.servo": "Servo",
+  "item.steampunk-era.servo.desc": "Attaches to pipe connections linked to inventories",
+  "itemGroup.steampunk-era.steampunk_tab": "Steampunk Era"
+}
