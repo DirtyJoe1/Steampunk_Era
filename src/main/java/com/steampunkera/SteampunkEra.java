@@ -5,6 +5,8 @@ import com.steampunkera.block.entity.ItemPipeBlockEntity;
 import com.steampunkera.item.ServoItem;
 import com.steampunkera.item.WrenchItem;
 import com.steampunkera.network.ServoTogglePayload;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerChunkEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.itemgroup.v1.FabricItemGroup;
 import net.fabricmc.fabric.api.object.builder.v1.block.entity.FabricBlockEntityTypeBuilder;
 import net.minecraft.block.AbstractBlock;
@@ -18,16 +20,23 @@ import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
+import net.minecraft.world.chunk.WorldChunk;
 import net.fabricmc.api.ModInitializer;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class SteampunkEra implements ModInitializer {
 	public static final String MOD_ID = "steampunk-era";
 
 	public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
+
+	public static final Set<ItemPipeBlockEntity> TICKING_PIPES = ConcurrentHashMap.newKeySet();
 
 	public static final Item WRENCH = Registry.register(
 			Registries.ITEM,
@@ -55,10 +64,9 @@ public class SteampunkEra implements ModInitializer {
 	public static final BlockEntityType<ItemPipeBlockEntity> ITEM_PIPE_BLOCK_ENTITY_TYPE = Registry.register(
 			Registries.BLOCK_ENTITY_TYPE,
 			id("item_pipe"),
-			FabricBlockEntityTypeBuilder.create(ItemPipeBlockEntity::new, ITEM_PIPE).build()
+			FabricBlockEntityTypeBuilder.create(ItemPipeBlockEntity::new, ITEM_PIPE).build(null)
 	);
 
-	// Креативная вкладка мода
 	public static final RegistryKey<ItemGroup> STEAMPUNK_TAB_KEY = RegistryKey.of(RegistryKeys.ITEM_GROUP, id("steampunk_tab"));
 	public static final ItemGroup STEAMPUNK_TAB = Registry.register(
 			Registries.ITEM_GROUP,
@@ -95,5 +103,27 @@ public class SteampunkEra implements ModInitializer {
 		SteampunkEraAttachments.init();
 		ServoMenuData.init();
 		ServoTogglePayload.register();
+
+		ServerChunkEvents.CHUNK_LOAD.register((ServerWorld world, WorldChunk chunk) -> {
+			for (var be : chunk.getBlockEntities().values()) {
+				if (be instanceof ItemPipeBlockEntity pipeBE) {
+					TICKING_PIPES.add(pipeBE);
+				}
+			}
+		});
+
+		ServerChunkEvents.CHUNK_UNLOAD.register((ServerWorld world, WorldChunk chunk) -> {
+			for (var be : chunk.getBlockEntities().values()) {
+				if (be instanceof ItemPipeBlockEntity pipeBE) {
+					TICKING_PIPES.remove(pipeBE);
+				}
+			}
+		});
+
+		ServerTickEvents.END_SERVER_TICK.register((MinecraftServer server) -> {
+			for (ItemPipeBlockEntity pipeBE : TICKING_PIPES) {
+				pipeBE.tick(server.getOverworld());
+			}
+		});
 	}
 }

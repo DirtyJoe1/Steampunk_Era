@@ -4,6 +4,11 @@ import com.steampunkera.SteampunkEra;
 import com.steampunkera.SteampunkEraAttachments;
 import com.steampunkera.SteampunkEraAttachments.PipeData;
 import com.steampunkera.block.ItemPipeBlock;
+import com.steampunkera.pipe.ItemPipeNetwork;
+import net.fabricmc.fabric.api.transfer.v1.item.ItemStorage;
+import net.fabricmc.fabric.api.transfer.v1.item.ItemVariant;
+import net.fabricmc.fabric.api.transfer.v1.storage.Storage;
+import net.fabricmc.fabric.api.transfer.v1.transaction.Transaction;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.util.math.BlockPos;
@@ -14,8 +19,66 @@ import java.util.function.UnaryOperator;
 
 public class ItemPipeBlockEntity extends BlockEntity {
 
+    private static final int SERVO_TICK_INTERVAL = 60; // Извлечение каждые 3 секунды (60 тиков)
+    private int tickCounter = 0;
+
     public ItemPipeBlockEntity(BlockPos pos, BlockState state) {
         super(SteampunkEra.ITEM_PIPE_BLOCK_ENTITY_TYPE, pos, state);
+        SteampunkEra.TICKING_PIPES.add(this);
+    }
+
+    @Override
+    public void markRemoved() {
+        SteampunkEra.TICKING_PIPES.remove(this);
+        super.markRemoved();
+    }
+
+    /**
+     * Вызывается каждый тик из ServerTickEvents.
+     */
+    public void tick(World world) {
+        if (world.isClient()) return;
+
+        tickCounter++;
+        if (tickCounter >= SERVO_TICK_INTERVAL) {
+            tickCounter = 0;
+            processServos(world);
+        }
+    }
+
+    /**
+     * Обрабатывает все активные сервоприводы на этой трубе.
+     */
+    private void processServos(World world) {
+        PipeData data = getData();
+        BlockPos pos = getPos();
+
+        for (Direction dir : Direction.values()) {
+            if (!data.hasServo(dir)) continue;
+            if (!data.isServoActive(dir)) continue;
+
+            BlockPos neighborPos = pos.offset(dir);
+            Storage<ItemVariant> neighborStorage = ItemStorage.SIDED.find(world, neighborPos, dir.getOpposite());
+            if (neighborStorage == null) continue;
+
+            try (Transaction transaction = Transaction.openOuter()) {
+                for (var view : neighborStorage) {
+                    if (view.isResourceBlank() || view.getAmount() <= 0) continue;
+
+                    ItemVariant variant = view.getResource();
+                    long maxExtract = Math.min(view.getAmount(), 8);
+
+                    long extracted = neighborStorage.extract(variant, maxExtract, transaction);
+                    if (extracted > 0) {
+                        long inserted = ItemPipeNetwork.tryInsertIntoNetwork(world, pos, dir, variant, extracted, transaction, dir);
+                        if (inserted > 0) {
+                            transaction.commit();
+                            break;
+                        }
+                    }
+                }
+            }
+        }
     }
 
     private PipeData getData() {

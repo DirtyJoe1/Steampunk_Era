@@ -13,7 +13,10 @@
       "Bash(cmd *)",
       "Bash(node *)",
       "Bash(timeout *)",
-      "Bash(ping *)"
+      "Bash(ping *)",
+      "WebFetch(ftbwiki.org)",
+      "WebFetch(teamcofh.com)",
+      "WebFetch(oldcofh.github.io)"
     ]
   },
   "$version": 3
