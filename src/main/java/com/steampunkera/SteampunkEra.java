@@ -4,8 +4,9 @@ import com.steampunkera.block.ItemPipeBlock;
 import com.steampunkera.block.entity.ItemPipeBlockEntity;
 import com.steampunkera.item.ServoItem;
 import com.steampunkera.item.WrenchItem;
-import com.steampunkera.network.ServoTogglePayload;
+import com.steampunkera.network.ServoPayload;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerChunkEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.itemgroup.v1.FabricItemGroup;
 import net.fabricmc.fabric.api.object.builder.v1.block.entity.FabricBlockEntityTypeBuilder;
@@ -20,7 +21,6 @@ import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import net.minecraft.world.chunk.WorldChunk;
@@ -102,7 +102,11 @@ public class SteampunkEra implements ModInitializer {
 		LOGGER.info("Hello Fabric world!");
 		SteampunkEraAttachments.init();
 		ServoMenuData.init();
-		ServoTogglePayload.register();
+		ServoPayload.register();
+
+		ServerLifecycleEvents.SERVER_STOPPING.register((server) -> {
+			TICKING_PIPES.clear();
+		});
 
 		ServerChunkEvents.CHUNK_LOAD.register((ServerWorld world, WorldChunk chunk) -> {
 			for (var be : chunk.getBlockEntities().values()) {
@@ -120,9 +124,9 @@ public class SteampunkEra implements ModInitializer {
 			}
 		});
 
-		ServerTickEvents.END_SERVER_TICK.register((MinecraftServer server) -> {
+		ServerTickEvents.END_WORLD_TICK.register((ServerWorld world) -> {
 			for (ItemPipeBlockEntity pipeBE : TICKING_PIPES) {
-				pipeBE.tick(server.getOverworld());
+				pipeBE.tick(world);
 			}
 		});
 	}

@@ -1,6 +1,7 @@
 package com.steampunkera.item;
 
 import com.steampunkera.SteampunkEra;
+import com.steampunkera.ServoConfig;
 import com.steampunkera.block.ItemPipeBlock;
 import com.steampunkera.block.entity.ItemPipeBlockEntity;
 import com.steampunkera.util.PipeHelper;
@@ -74,7 +75,7 @@ public class WrenchItem extends Item {
 
         if (blockEntity.hasServo(side)) {
             blockEntity.setServo(side, false);
-            blockEntity.setServoActive(side, true); // Сброс состояния при снятии
+            blockEntity.setServoConfig(side, ServoConfig.DEFAULT);
             dropItem(world, pos, new ItemStack(SteampunkEra.SERVOS_ITEM, 1));
             world.playSound(null, pos, SoundEvents.BLOCK_METAL_PLACE, SoundCategory.BLOCKS, 1.0f, 1.0f);
             player.sendMessage(Text.literal("Servo dismantled"), true);

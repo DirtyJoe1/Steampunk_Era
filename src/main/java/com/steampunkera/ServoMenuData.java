@@ -11,22 +11,37 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public final class ServoMenuData {
 
-    public record ServoData(BlockPos pos, Direction servoSide, boolean enabled) {
-        public static final PacketCodec<RegistryByteBuf, ServoData> PACKET_CODEC = PacketCodec.tuple(
-                BlockPos.PACKET_CODEC, ServoData::pos,
-                PacketCodecs.indexed(i -> Direction.values()[i], Direction::ordinal), ServoData::servoSide,
-                PacketCodecs.BOOLEAN, ServoData::enabled,
-                ServoData::new
-        );
+    public record ServoData(BlockPos pos, Direction servoSide, boolean enabled, ServoConfig config) {
+        public static final PacketCodec<RegistryByteBuf, ServoData> PACKET_CODEC = new PacketCodec<>() {
+            @Override
+            public ServoData decode(RegistryByteBuf buf) {
+                BlockPos pos = buf.readBlockPos();
+                Direction servoSide = Direction.values()[buf.readInt()];
+                boolean enabled = buf.readBoolean();
+                ServoConfig config = ServoConfig.fromNbt(buf.readNbt());
+                return new ServoData(pos, servoSide, enabled, config);
+            }
+
+            @Override
+            public void encode(RegistryByteBuf buf, ServoData data) {
+                buf.writeBlockPos(data.pos());
+                buf.writeInt(data.servoSide().ordinal());
+                buf.writeBoolean(data.enabled());
+                buf.writeNbt(data.config().toNbt());
+            }
+        };
     }
 
     public static final ExtendedScreenHandlerType<ServoMenu, ServoData> SERVO_MENU_TYPE = Registry.register(
             Registries.SCREEN_HANDLER,
             id("servo_menu"),
             new ExtendedScreenHandlerType<>(
-                    (syncId, inventory, data) -> new ServoMenu(syncId, inventory, data.pos(), data.servoSide(), data.enabled()),
+                    (syncId, inventory, data) -> new ServoMenu(syncId, inventory, data.pos(), data.servoSide(), data.enabled(), data.config()),
                     ServoData.PACKET_CODEC
             )
     );

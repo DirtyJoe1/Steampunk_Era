@@ -1,5 +1,6 @@
 package com.steampunkera.block;
 
+import com.steampunkera.ServoConfig;
 import com.steampunkera.ServoMenuData.ServoData;
 import com.steampunkera.SteampunkEra;
 import com.steampunkera.block.entity.ItemPipeBlockEntity;
@@ -152,25 +153,31 @@ public class ItemPipeBlock extends Block implements BlockEntityProvider {
             Direction side = PipeHelper.getDirectionFromHitPos(hit.getPos(), pos);
 
             if (be.hasServo(side)) {
-                boolean enabled = be.isServoActive(side);
+                try {
+                    boolean enabled = be.getServoConfig(side).enabled();
+                    com.steampunkera.ServoConfig config = be.getServoConfig(side);
 
-                player.openHandledScreen(new ExtendedScreenHandlerFactory<ServoData>() {
-                    @Override
-                    public Text getDisplayName() {
-                        return Text.literal("Servo");
-                    }
+                    player.openHandledScreen(new ExtendedScreenHandlerFactory<ServoData>() {
+                        @Override
+                        public Text getDisplayName() {
+                            return Text.literal("Servo");
+                        }
 
-                    @Override
-                    public ScreenHandler createMenu(int syncId, PlayerInventory inv, PlayerEntity p) {
-                        return new ServoMenu(syncId, inv, be, side, enabled);
-                    }
+                        @Override
+                        public ScreenHandler createMenu(int syncId, PlayerInventory inv, PlayerEntity p) {
+                            return new ServoMenu(syncId, inv, be, side, enabled);
+                        }
 
-                    @Override
-                    public @NonNull ServoData getScreenOpeningData(@NonNull ServerPlayerEntity player) {
-                        return new ServoData(pos, side, enabled);
-                    }
-                });
-                return ActionResult.SUCCESS;
+                        @Override
+                        public @NonNull ServoData getScreenOpeningData(@NonNull ServerPlayerEntity player) {
+                            return new ServoData(pos, side, enabled, config);
+                        }
+                    });
+                    return ActionResult.SUCCESS;
+                } catch (Exception e) {
+                    SteampunkEra.LOGGER.error("[ServoMenu] Error opening GUI: {}", e.getMessage());
+                    return ActionResult.FAIL;
+                }
             }
         }
 
@@ -221,7 +228,7 @@ public class ItemPipeBlock extends Block implements BlockEntityProvider {
                 if (pipeBE.hasServo(dir) && !PipeHelper.isInventoryNotAPipe(world.getBlockState(pos.offset(dir)).getBlock())) {
                     dropServo(world, pos, dir);
                     pipeBE.setServo(dir, false);
-                    pipeBE.setServoActive(dir, true);
+                    pipeBE.setServoConfig(dir, ServoConfig.DEFAULT);
                 }
             }
         }
@@ -230,6 +237,10 @@ public class ItemPipeBlock extends Block implements BlockEntityProvider {
 
     private void dropServo(World world, BlockPos pos, Direction dir) {
         if (!world.isClient()) {
+            if (world.getBlockEntity(pos) instanceof ItemPipeBlockEntity be) {
+                be.setServo(dir, false);
+                be.setServoConfig(dir, ServoConfig.DEFAULT);
+            }
             Vec3d dropPos = Vec3d.ofCenter(pos).offset(dir, 0.5);
             ItemEntity itemEntity = new ItemEntity(world, dropPos.x, dropPos.y, dropPos.z, new ItemStack(SteampunkEra.SERVOS_ITEM));
             itemEntity.setVelocity(
