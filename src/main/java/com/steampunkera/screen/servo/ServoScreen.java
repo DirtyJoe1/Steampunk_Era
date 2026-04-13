@@ -1,6 +1,6 @@
-package com.steampunkera.screen;
+package com.steampunkera.screen.servo;
 
-import com.steampunkera.ServoConfig;
+import com.steampunkera.util.ServoConfig;
 import com.steampunkera.network.ServoPayload;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.gl.RenderPipelines;

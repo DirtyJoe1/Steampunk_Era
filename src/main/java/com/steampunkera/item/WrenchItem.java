@@ -1,7 +1,7 @@
 package com.steampunkera.item;
 
 import com.steampunkera.SteampunkEra;
-import com.steampunkera.ServoConfig;
+import com.steampunkera.util.ServoConfig;
 import com.steampunkera.block.ItemPipeBlock;
 import com.steampunkera.block.entity.ItemPipeBlockEntity;
 import com.steampunkera.util.PipeHelper;

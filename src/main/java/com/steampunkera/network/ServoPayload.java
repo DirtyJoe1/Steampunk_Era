@@ -1,10 +1,10 @@
 package com.steampunkera.network;
 
-import com.steampunkera.ServoConfig;
 import com.steampunkera.SteampunkEra;
 import com.steampunkera.block.entity.ItemPipeBlockEntity;
-import com.steampunkera.screen.ServoMenu;
-import com.steampunkera.screen.ServoScreen;
+import com.steampunkera.screen.servo.ServoMenu;
+import com.steampunkera.screen.servo.ServoScreen;
+import com.steampunkera.util.ServoConfig;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;

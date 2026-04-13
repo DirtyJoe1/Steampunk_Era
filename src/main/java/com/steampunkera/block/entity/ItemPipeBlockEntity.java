@@ -1,9 +1,9 @@
 package com.steampunkera.block.entity;
 
-import com.steampunkera.ServoConfig;
+import com.steampunkera.util.ServoConfig;
 import com.steampunkera.SteampunkEra;
 import com.steampunkera.block.ItemPipeBlock;
-import com.steampunkera.pipe.ItemPipeNetwork;
+import com.steampunkera.util.ItemPipeNetwork;
 import net.fabricmc.fabric.api.transfer.v1.item.ItemStorage;
 import net.fabricmc.fabric.api.transfer.v1.item.ItemVariant;
 import net.fabricmc.fabric.api.transfer.v1.storage.Storage;

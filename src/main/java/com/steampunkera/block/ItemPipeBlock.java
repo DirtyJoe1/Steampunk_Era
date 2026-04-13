@@ -1,11 +1,11 @@
 package com.steampunkera.block;
 
-import com.steampunkera.ServoConfig;
-import com.steampunkera.ServoMenuData.ServoData;
+import com.steampunkera.util.ServoConfig;
+import com.steampunkera.util.ServoMenuData.ServoData;
 import com.steampunkera.SteampunkEra;
 import com.steampunkera.block.entity.ItemPipeBlockEntity;
 import com.steampunkera.item.WrenchItem;
-import com.steampunkera.screen.ServoMenu;
+import com.steampunkera.screen.servo.ServoMenu;
 import com.steampunkera.util.PipeHelper;
 import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
 import net.minecraft.block.Block;
@@ -153,7 +153,7 @@ public class ItemPipeBlock extends Block implements BlockEntityProvider {
             if (be.hasServo(side)) {
                 try {
                     boolean enabled = be.getServoConfig(side).enabled();
-                    com.steampunkera.ServoConfig config = be.getServoConfig(side);
+                    ServoConfig config = be.getServoConfig(side);
 
                     player.openHandledScreen(new ExtendedScreenHandlerFactory<ServoData>() {
                         @Override

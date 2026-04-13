@@ -1,4 +1,4 @@
-package com.steampunkera;
+package com.steampunkera.util;
 
 import net.minecraft.item.Item;
 import net.minecraft.nbt.NbtCompound;

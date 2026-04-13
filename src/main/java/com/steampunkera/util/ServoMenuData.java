@@ -1,18 +1,15 @@
-package com.steampunkera;
+package com.steampunkera.util;
 
-import com.steampunkera.screen.ServoMenu;
+import com.steampunkera.SteampunkEra;
+import com.steampunkera.screen.servo.ServoMenu;
 import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerType;
 import net.minecraft.network.RegistryByteBuf;
 import net.minecraft.network.codec.PacketCodec;
-import net.minecraft.network.codec.PacketCodecs;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
-
-import java.util.ArrayList;
-import java.util.List;
 
 public final class ServoMenuData {
 

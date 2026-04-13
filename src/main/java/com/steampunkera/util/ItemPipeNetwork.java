@@ -1,6 +1,5 @@
-package com.steampunkera.pipe;
+package com.steampunkera.util;
 
-import com.steampunkera.ServoConfig;
 import com.steampunkera.block.ItemPipeBlock;
 import com.steampunkera.block.entity.ItemPipeBlockEntity;
 import net.fabricmc.fabric.api.transfer.v1.item.ItemStorage;

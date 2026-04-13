@@ -1,7 +1,7 @@
-package com.steampunkera.screen;
+package com.steampunkera.screen.servo;
 
-import com.steampunkera.ServoConfig;
-import com.steampunkera.ServoMenuData;
+import com.steampunkera.util.ServoConfig;
+import com.steampunkera.util.ServoMenuData;
 import com.steampunkera.block.entity.ItemPipeBlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
