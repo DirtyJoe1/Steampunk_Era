@@ -114,22 +114,26 @@ public class ItemPipeBlockEntity extends BlockEntity {
         Storage<ItemVariant> neighborStorage = ItemStorage.SIDED.find(world, neighborPos, dir.getOpposite());
         if (neighborStorage == null) return;
 
-        try (Transaction transaction = Transaction.openOuter()) {
-            for (var view : neighborStorage) {
-                if (view.isResourceBlank() || view.getAmount() <= 0) continue;
-                ItemVariant variant = view.getResource();
-                if (!config.matchesFilter(variant.getItem())) continue;
+        for (var view : neighborStorage) {
+            if (view.isResourceBlank() || view.getAmount() <= 0) continue;
+            ItemVariant variant = view.getResource();
+            if (!config.matchesFilter(variant.getItem())) continue;
 
-                long maxExtract = Math.min(view.getAmount(), config.maxExtract());
-                long extracted = neighborStorage.extract(variant, maxExtract, transaction);
+            long maxExtract = Math.min(view.getAmount(), config.maxExtract());
+            boolean success = false;
+
+            try (Transaction tx = Transaction.openOuter()) {
+                long extracted = neighborStorage.extract(variant, maxExtract, tx);
                 if (extracted > 0) {
-                    long inserted = ItemPipeNetwork.tryInsertIntoNetwork(world, pos, dir, variant, extracted, transaction, dir, config.routingMode(), this);
-                    if (inserted > 0) {
-                        transaction.commit();
-                        break;
+                    long inserted = ItemPipeNetwork.tryInsertIntoNetwork(world, pos, dir, variant, extracted, tx, dir, config.routingMode(), this);
+                    if (inserted == extracted) {
+                        tx.commit();
+                        success = true;
                     }
                 }
             }
+
+            if (success) break;
         }
     }
 
