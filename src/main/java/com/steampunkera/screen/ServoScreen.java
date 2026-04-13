@@ -7,6 +7,7 @@ import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.gui.widget.ButtonWidget;
+import net.minecraft.client.gui.widget.SliderWidget;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
@@ -17,6 +18,9 @@ public class ServoScreen extends HandledScreen<ServoMenu> {
     private static final int TEXTURE_RESOLUTION = 256;
     private static final Identifier TORCH_ON = Identifier.of("steampunk-era", "textures/gui/redstone_torch_lit.png");
     private static final Identifier TORCH_OFF = Identifier.of("steampunk-era", "textures/gui/redstone_torch_unlit.png");
+    private static final Identifier ICON_ROUND_ROBIN = Identifier.of("steampunk-era", "textures/gui/round_robin.png");
+    private static final Identifier ICON_NEAREST_FIRST = Identifier.of("steampunk-era", "textures/gui/nearest_first.png");
+    private static final Identifier ICON_FURTHEST_FIRST = Identifier.of("steampunk-era", "textures/gui/furthest_first.png");
 
     private boolean enabled;
     private ServoConfig currentConfig;
@@ -24,12 +28,8 @@ public class ServoScreen extends HandledScreen<ServoMenu> {
     private ButtonWidget toggleButton;
     private ButtonWidget filterModeButton;
     private ButtonWidget routingModeButton;
-    private ButtonWidget intervalLabelButton;
-    private ButtonWidget intervalDownButton;
-    private ButtonWidget intervalUpButton;
-    private ButtonWidget maxLabelButton;
-    private ButtonWidget maxDownButton;
-    private ButtonWidget maxUpButton;
+    private ServoSlider intervalSlider;
+    private ServoSlider maxSlider;
 
     public ServoScreen(ServoMenu menu, PlayerInventory inventory, Text title) {
         super(menu, inventory, title);
@@ -59,50 +59,30 @@ public class ServoScreen extends HandledScreen<ServoMenu> {
         ).dimensions(x + 64, y + 8, 90, 14).build();
         this.addDrawableChild(filterModeButton);
 
-        // Ряд 2: [Route: MODE]
+        // Ряд 2: [Иконка] [Route: MODE]
         routingModeButton = ButtonWidget.builder(
-                Text.literal("Route: " + currentConfig.routingMode().name()),
+                Text.literal(currentConfig.routingMode().name()),
                 btn -> cycleRoutingMode()
-        ).dimensions(x + 8, y + 26, 146, 14).build();
+        ).dimensions(x + 26, y + 26, 146, 14).build();
         this.addDrawableChild(routingModeButton);
 
-        // Ряд 3: [-] Interval: 60 [+]
-        intervalDownButton = ButtonWidget.builder(
-                Text.literal("-"),
-                btn -> changeInterval(-5)
-        ).dimensions(x + 8, y + 44, 16, 14).build();
-        this.addDrawableChild(intervalDownButton);
+        // Ряд 3: Interval slider
+        intervalSlider = new ServoSlider(x + 8, y + 44, 160, 14,
+                "Interval", 5, 120, currentConfig.extractInterval(),
+                val -> {
+                    currentConfig = currentConfig.withExtractInterval(val);
+                    sendSettings();
+                });
+        this.addDrawableChild(intervalSlider);
 
-        intervalLabelButton = ButtonWidget.builder(
-                Text.literal("Interval: " + currentConfig.extractInterval()),
-                btn -> {}
-        ).dimensions(x + 26, y + 44, 100, 14).build();
-        this.addDrawableChild(intervalLabelButton);
-
-        intervalUpButton = ButtonWidget.builder(
-                Text.literal("+"),
-                btn -> changeInterval(5)
-        ).dimensions(x + 128, y + 44, 16, 14).build();
-        this.addDrawableChild(intervalUpButton);
-
-        // Ряд 4: [-] Max: 8 [+]
-        maxDownButton = ButtonWidget.builder(
-                Text.literal("-"),
-                btn -> changeMaxExtract(-1)
-        ).dimensions(x + 8, y + 62, 16, 14).build();
-        this.addDrawableChild(maxDownButton);
-
-        maxLabelButton = ButtonWidget.builder(
-                Text.literal("Max: " + currentConfig.maxExtract()),
-                btn -> {}
-        ).dimensions(x + 26, y + 62, 100, 14).build();
-        this.addDrawableChild(maxLabelButton);
-
-        maxUpButton = ButtonWidget.builder(
-                Text.literal("+"),
-                btn -> changeMaxExtract(1)
-        ).dimensions(x + 128, y + 62, 16, 14).build();
-        this.addDrawableChild(maxUpButton);
+        // Ряд 4: Max slider
+        maxSlider = new ServoSlider(x + 8, y + 62, 160, 14,
+                "Max", 1, 64, currentConfig.maxExtract(),
+                val -> {
+                    currentConfig = currentConfig.withMaxExtract(val);
+                    sendSettings();
+                });
+        this.addDrawableChild(maxSlider);
     }
 
     private void toggleEnabled() {
@@ -125,21 +105,7 @@ public class ServoScreen extends HandledScreen<ServoMenu> {
         ServoConfig.RoutingMode[] modes = ServoConfig.RoutingMode.values();
         int idx = (currentConfig.routingMode().ordinal() + 1) % modes.length;
         currentConfig = currentConfig.withRoutingMode(modes[idx]);
-        if (routingModeButton != null) routingModeButton.setMessage(Text.literal("Route: " + currentConfig.routingMode().name()));
-        sendSettings();
-    }
-
-    private void changeInterval(int delta) {
-        int newVal = Math.max(5, Math.min(120, currentConfig.extractInterval() + delta));
-        currentConfig = currentConfig.withExtractInterval(newVal);
-        if (intervalLabelButton != null) intervalLabelButton.setMessage(Text.literal("Interval: " + newVal));
-        sendSettings();
-    }
-
-    private void changeMaxExtract(int delta) {
-        int newVal = Math.max(1, Math.min(64, currentConfig.maxExtract() + delta));
-        currentConfig = currentConfig.withMaxExtract(newVal);
-        if (maxLabelButton != null) maxLabelButton.setMessage(Text.literal("Max: " + newVal));
+        if (routingModeButton != null) routingModeButton.setMessage(Text.literal(currentConfig.routingMode().name()));
         sendSettings();
     }
 
@@ -151,13 +117,27 @@ public class ServoScreen extends HandledScreen<ServoMenu> {
     public void updateConfig(ServoConfig config) {
         this.currentConfig = config;
         if (filterModeButton != null) filterModeButton.setMessage(Text.literal("Filter: " + config.filterMode().name()));
-        if (routingModeButton != null) routingModeButton.setMessage(Text.literal("Route: " + config.routingMode().name()));
-        if (intervalLabelButton != null) intervalLabelButton.setMessage(Text.literal("Interval: " + config.extractInterval()));
-        if (maxLabelButton != null) maxLabelButton.setMessage(Text.literal("Max: " + config.maxExtract()));
+        if (routingModeButton != null) routingModeButton.setMessage(Text.literal(config.routingMode().name()));
+        if (intervalSlider != null) {
+            double val = (config.extractInterval() - 5.0) / (120.0 - 5.0);
+            intervalSlider.setSliderValue(val);
+        }
+        if (maxSlider != null) {
+            double val = (config.maxExtract() - 1.0) / (64.0 - 1.0);
+            maxSlider.setSliderValue(val);
+        }
     }
 
     public void updateButton(boolean enabled) {
         if (toggleButton != null) toggleButton.setMessage(Text.literal(enabled ? "ON" : "OFF"));
+    }
+
+    private Identifier getRoutingModeIcon(ServoConfig.RoutingMode mode) {
+        return switch (mode) {
+            case ROUND_ROBIN -> ICON_ROUND_ROBIN;
+            case NEAREST_FIRST -> ICON_NEAREST_FIRST;
+            case FURTHEST_FIRST -> ICON_FURTHEST_FIRST;
+        };
     }
 
     @Override
@@ -169,6 +149,10 @@ public class ServoScreen extends HandledScreen<ServoMenu> {
         // Иконка факела слева от ON/OFF
         Identifier torch = enabled ? TORCH_ON : TORCH_OFF;
         context.drawTexture(RenderPipelines.GUI_TEXTURED, torch, x + 8, y + 8, 0, 0, 16, 16, 16, 16);
+
+        // Иконка режима маршрутизации слева от кнопки Route
+        Identifier routingIcon = getRoutingModeIcon(currentConfig.routingMode());
+        context.drawTexture(RenderPipelines.GUI_TEXTURED, routingIcon, x + 8, y + 26, 0, 0, 16, 16, 16, 16);
     }
 
     @Override
@@ -180,7 +164,59 @@ public class ServoScreen extends HandledScreen<ServoMenu> {
 
     @Override
     public void close() {
-        sendSettings();
         super.close();
+    }
+
+    private static class ServoSlider extends SliderWidget {
+        private final java.util.function.IntConsumer onChanged;
+        private final int min, max;
+        private final String label;
+
+        ServoSlider(int x, int y, int width, int height, String label, int min, int max, int initial, java.util.function.IntConsumer onChanged) {
+            super(x, y, width, height, Text.literal(label + ": " + initial), (double)(initial - min) / (max - min));
+            this.label = label;
+            this.min = min;
+            this.max = max;
+            this.onChanged = onChanged;
+        }
+
+        @Override
+        public boolean keyPressed(net.minecraft.client.input.KeyInput input) {
+            double delta = 1.0 / (max - min);
+            int oldVal = clampValue();
+            if (input.key() == net.minecraft.client.util.InputUtil.GLFW_KEY_LEFT) {
+                this.value = Math.max(0.0, this.value - delta);
+            } else if (input.key() == net.minecraft.client.util.InputUtil.GLFW_KEY_RIGHT) {
+                this.value = Math.min(1.0, this.value + delta);
+            } else {
+                return super.keyPressed(input);
+            }
+            int newVal = clampValue();
+            if (newVal != oldVal) {
+                applyValue();
+            }
+            updateMessage();
+            return true;
+        }
+
+        @Override
+        protected void applyValue() {
+            int val = clampValue();
+            onChanged.accept(val);
+        }
+
+        @Override
+        protected void updateMessage() {
+            this.setMessage(Text.literal(label + ": " + clampValue()));
+        }
+
+        private int clampValue() {
+            return Math.clamp((int) Math.round(this.value * (max - min) + min), min, max);
+        }
+
+        void setSliderValue(double val) {
+            this.value = val;
+            updateMessage();
+        }
     }
 }

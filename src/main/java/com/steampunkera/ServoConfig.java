@@ -24,13 +24,13 @@ public record ServoConfig(
     public static final ServoConfig DEFAULT = new ServoConfig(
             true,
             FilterMode.BLACKLIST, new ArrayList<>(),
-            RoutingMode.NEAREST_FIRST, 60, 8);
+            RoutingMode.NEAREST_FIRST, 20, 8);
 
     public static ServoConfig fromNbt(NbtCompound nbt) {
         boolean en = nbt.getBoolean("enabled").orElse(true);
         FilterMode fm = FilterMode.valueOf(nbt.getString("filterMode").orElse("BLACKLIST"));
         RoutingMode rm = RoutingMode.valueOf(nbt.getString("routingMode").orElse("NEAREST_FIRST"));
-        int ei = nbt.getInt("extractInterval").orElse(60);
+        int ei = nbt.getInt("extractInterval").orElse(20);
         int me = nbt.getInt("maxExtract").orElse(8);
         List<Item> items = new ArrayList<>();
         nbt.getList("filterItems").ifPresent(list -> {

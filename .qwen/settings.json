@@ -16,7 +16,9 @@
       "Bash(ping *)",
       "WebFetch(ftbwiki.org)",
       "WebFetch(teamcofh.com)",
-      "WebFetch(oldcofh.github.io)"
+      "WebFetch(oldcofh.github.io)",
+      "Bash(findstr *)",
+      "WebFetch(stackoverflow.com)"
     ]
   },
   "$version": 3
