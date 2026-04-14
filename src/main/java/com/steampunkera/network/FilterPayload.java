@@ -108,13 +108,13 @@ public final class FilterPayload {
                 var player = context.player();
                 if (context.server().getOverworld().getBlockEntity(payload.pos()) instanceof ItemPipeBlockEntity pipe) {
                     final boolean enabled = !(player.currentScreenHandler instanceof ServoMenu servoMenu) || servoMenu.isEnabled();
-                    final var filterMode = pipe.getServoConfig(payload.servoSide()).filterMode();
+                    final var config = pipe.getServoConfig(payload.servoSide());
                     final int mouseX = payload.mouseX();
                     final int mouseY = payload.mouseY();
                     ExtendedScreenHandlerFactory<FilterMenuData.FilterData> factory = new ExtendedScreenHandlerFactory<>() {
                         @Override
                         public FilterMenuData.FilterData getScreenOpeningData(ServerPlayerEntity player) {
-                            return new FilterMenuData.FilterData(payload.pos(), payload.servoSide(), enabled, filterMode, mouseX, mouseY);
+                            return new FilterMenuData.FilterData(payload.pos(), payload.servoSide(), enabled, config.filterMode(), config.filterItems(), mouseX, mouseY);
                         }
 
                         @Override
@@ -125,7 +125,7 @@ public final class FilterPayload {
                         @Override
                         public ScreenHandler createMenu(int syncId, PlayerInventory playerInventory, PlayerEntity player) {
                             return new FilterMenu(
-                                    syncId, playerInventory, payload.pos(), payload.servoSide(), enabled, filterMode, mouseX, mouseY);
+                                    syncId, playerInventory, payload.pos(), payload.servoSide(), enabled, config.filterMode(), config.filterItems(), mouseX, mouseY);
                         }
                     };
                     context.player().openHandledScreen(factory);
