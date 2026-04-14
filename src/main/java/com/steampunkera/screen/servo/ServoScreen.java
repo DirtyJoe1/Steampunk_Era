@@ -9,8 +9,11 @@ import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.SliderWidget;
 import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.text.OrderedText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
+
+import java.util.List;
 
 public class ServoScreen extends HandledScreen<ServoMenu> {
 
@@ -50,24 +53,25 @@ public class ServoScreen extends HandledScreen<ServoMenu> {
         toggleButton = ButtonWidget.builder(
                 Text.literal(enabled ? "ON" : "OFF"),
                 btn -> toggleEnabled()
-        ).dimensions(x + 28, y + 8, 32, 14).build();
+        ).dimensions(x + 28, y + 18, 32, 14).build();
         this.addDrawableChild(toggleButton);
 
         filterModeButton = ButtonWidget.builder(
                 Text.literal("Filter: " + currentConfig.filterMode().name()),
                 btn -> cycleFilterMode()
-        ).dimensions(x + 64, y + 8, 90, 14).build();
+        ).dimensions(x + 64, y + 18, 90, 14).build();
         this.addDrawableChild(filterModeButton);
 
         // Ряд 2: [Иконка] [Route: MODE]
+        int routingButtonWidth = this.textRenderer.getWidth(Text.literal(currentConfig.routingMode().name())) + 8;
         routingModeButton = ButtonWidget.builder(
                 Text.literal(currentConfig.routingMode().name()),
                 btn -> cycleRoutingMode()
-        ).dimensions(x + 26, y + 26, 146, 14).build();
+        ).dimensions(x + 26, y + 36, routingButtonWidth, 14).build();
         this.addDrawableChild(routingModeButton);
 
-        // Ряд 3: Interval slider
-        intervalSlider = new ServoSlider(x + 8, y + 44, 160, 14,
+        // Ряд 3: Interval slider | Max slider (на одном ряду)
+        intervalSlider = new ServoSlider(x + 8, y + 54, 75, 14,
                 "Interval", 5, 120, currentConfig.extractInterval(),
                 val -> {
                     currentConfig = currentConfig.withExtractInterval(val);
@@ -75,8 +79,7 @@ public class ServoScreen extends HandledScreen<ServoMenu> {
                 });
         this.addDrawableChild(intervalSlider);
 
-        // Ряд 4: Max slider
-        maxSlider = new ServoSlider(x + 8, y + 62, 160, 14,
+        maxSlider = new ServoSlider(x + 87, y + 54, 75, 14,
                 "Max", 1, 64, currentConfig.maxExtract(),
                 val -> {
                     currentConfig = currentConfig.withMaxExtract(val);
@@ -105,7 +108,11 @@ public class ServoScreen extends HandledScreen<ServoMenu> {
         ServoConfig.RoutingMode[] modes = ServoConfig.RoutingMode.values();
         int idx = (currentConfig.routingMode().ordinal() + 1) % modes.length;
         currentConfig = currentConfig.withRoutingMode(modes[idx]);
-        if (routingModeButton != null) routingModeButton.setMessage(Text.literal(currentConfig.routingMode().name()));
+        if (routingModeButton != null) {
+            Text newText = Text.literal(currentConfig.routingMode().name());
+            routingModeButton.setMessage(newText);
+            routingModeButton.setWidth(this.textRenderer.getWidth(newText) + 8);
+        }
         sendSettings();
     }
 
@@ -117,7 +124,11 @@ public class ServoScreen extends HandledScreen<ServoMenu> {
     public void updateConfig(ServoConfig config) {
         this.currentConfig = config;
         if (filterModeButton != null) filterModeButton.setMessage(Text.literal("Filter: " + config.filterMode().name()));
-        if (routingModeButton != null) routingModeButton.setMessage(Text.literal(config.routingMode().name()));
+        if (routingModeButton != null) {
+            Text routingText = Text.literal(config.routingMode().name());
+            routingModeButton.setMessage(routingText);
+            routingModeButton.setWidth(this.textRenderer.getWidth(routingText) + 8);
+        }
         if (intervalSlider != null) {
             double val = (config.extractInterval() - 5.0) / (120.0 - 5.0);
             intervalSlider.setSliderValue(val);
@@ -148,11 +159,11 @@ public class ServoScreen extends HandledScreen<ServoMenu> {
 
         // Иконка факела слева от ON/OFF
         Identifier torch = enabled ? TORCH_ON : TORCH_OFF;
-        context.drawTexture(RenderPipelines.GUI_TEXTURED, torch, x + 8, y + 8, 0, 0, 16, 16, 16, 16);
+        context.drawTexture(RenderPipelines.GUI_TEXTURED, torch, x + 8, y + 18, 0, 0, 16, 16, 16, 16);
 
         // Иконка режима маршрутизации слева от кнопки Route
         Identifier routingIcon = getRoutingModeIcon(currentConfig.routingMode());
-        context.drawTexture(RenderPipelines.GUI_TEXTURED, routingIcon, x + 8, y + 26, 0, 0, 16, 16, 16, 16);
+        context.drawTexture(RenderPipelines.GUI_TEXTURED, routingIcon, x + 8, y + 36, 0, 0, 16, 16, 16, 16);
     }
 
     @Override
@@ -160,6 +171,22 @@ public class ServoScreen extends HandledScreen<ServoMenu> {
         this.renderBackground(context, mouseX, mouseY, delta);
         super.render(context, mouseX, mouseY, delta);
         this.drawMouseoverTooltip(context, mouseX, mouseY);
+
+        List<OrderedText> tooltipLines = null;
+        if (toggleButton != null && toggleButton.isMouseOver(mouseX, mouseY)) {
+            tooltipLines = this.textRenderer.wrapLines(Text.literal("Turn On/OFF servo"), 150);
+        } else if (filterModeButton != null && filterModeButton.isMouseOver(mouseX, mouseY)) {
+            tooltipLines = this.textRenderer.wrapLines(Text.literal("Filter mode: " + currentConfig.filterMode().name()), 150);
+        } else if (routingModeButton != null && routingModeButton.isMouseOver(mouseX, mouseY)) {
+            tooltipLines = this.textRenderer.wrapLines(Text.literal("Routing mode: " + currentConfig.routingMode().name()), 150);
+        } else if (intervalSlider != null && intervalSlider.isMouseOver(mouseX, mouseY)) {
+            tooltipLines = this.textRenderer.wrapLines(Text.literal("Time interval (ticks) between extraction operations: " + currentConfig.extractInterval()), 150);
+        } else if (maxSlider != null && maxSlider.isMouseOver(mouseX, mouseY)) {
+            tooltipLines = this.textRenderer.wrapLines(Text.literal("Max extracted items per operation: " + currentConfig.maxExtract()), 150);
+        }
+        if (tooltipLines != null && !tooltipLines.isEmpty()) {
+            context.drawOrderedTooltip(this.textRenderer, tooltipLines, mouseX, mouseY);
+        }
     }
 
     @Override
