@@ -5,7 +5,7 @@ import com.steampunkera.screen.filter.FilterMenu;
 import com.steampunkera.screen.filter.FilterMenuData;
 import com.steampunkera.screen.servo.ServoMenu;
 import com.steampunkera.block.entity.ItemPipeBlockEntity;
-import com.steampunkera.util.ServoMenuData;
+import com.steampunkera.screen.servo.ServoMenuData;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;

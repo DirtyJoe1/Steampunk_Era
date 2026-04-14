@@ -1,7 +1,7 @@
-package com.steampunkera.util;
+package com.steampunkera.screen.servo;
 
 import com.steampunkera.SteampunkEra;
-import com.steampunkera.screen.servo.ServoMenu;
+import com.steampunkera.util.ServoConfig;
 import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerType;
 import net.minecraft.network.RegistryByteBuf;
 import net.minecraft.network.codec.PacketCodec;

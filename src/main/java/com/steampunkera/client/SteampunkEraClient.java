@@ -2,7 +2,7 @@ package com.steampunkera.client;
 
 import com.steampunkera.screen.filter.FilterMenuData;
 import com.steampunkera.screen.filter.FilterScreen;
-import com.steampunkera.util.ServoMenuData;
+import com.steampunkera.screen.servo.ServoMenuData;
 import com.steampunkera.screen.servo.ServoScreen;
 import net.fabricmc.api.ClientModInitializer;
 import net.minecraft.client.gui.screen.ingame.HandledScreens;

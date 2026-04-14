@@ -6,7 +6,7 @@ import com.steampunkera.item.ServoItem;
 import com.steampunkera.item.WrenchItem;
 import com.steampunkera.network.ServoPayload;
 import com.steampunkera.network.FilterPayload;
-import com.steampunkera.util.ServoMenuData;
+import com.steampunkera.screen.servo.ServoMenuData;
 import com.steampunkera.screen.filter.FilterMenuData;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;

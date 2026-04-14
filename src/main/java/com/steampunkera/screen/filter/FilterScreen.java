@@ -21,6 +21,8 @@ public class FilterScreen extends HandledScreen<FilterMenu> {
 
     private static final Identifier TEXTURE = Identifier.of("steampunk-era", "textures/gui/filter_gui.png");
     private static final int TEXTURE_RESOLUTION = 256;
+    private static final Identifier WHITELIST = Identifier.of("steampunk-era", "textures/gui/whitelist.png");
+    private static final Identifier BLACKLIST = Identifier.of("steampunk-era", "textures/gui/blacklist.png");
 
     private ServoConfig.FilterMode filterMode;
 
@@ -57,12 +59,12 @@ public class FilterScreen extends HandledScreen<FilterMenu> {
         ).dimensions(x + 8, y + 15, 46, 14).build();
         this.addDrawableChild(backButton);
 
-        // Кнопка "Mode" — справа от Back
+        // Кнопка "Mode" — справа от иконки фильтра
         int filterButtonWidth = this.textRenderer.getWidth(Text.literal("Mode: " + filterMode.name())) + 8;
         filterModeButton = ButtonWidget.builder(
                 Text.literal("Mode: " + filterMode.name()),
                 btn -> cycleFilterMode()
-        ).dimensions(x + 58, y + 15, filterButtonWidth, 14).build();
+        ).dimensions(x + 74, y + 15, filterButtonWidth, 14).build();
         this.addDrawableChild(filterModeButton);
     }
 
@@ -91,6 +93,9 @@ public class FilterScreen extends HandledScreen<FilterMenu> {
         int x = (this.width - this.backgroundWidth) / 2;
         int y = (this.height - this.backgroundHeight) / 2;
         context.drawTexture(RenderPipelines.GUI_TEXTURED, TEXTURE, x, y, 0f, 0f, this.backgroundWidth, this.backgroundHeight, TEXTURE_RESOLUTION, TEXTURE_RESOLUTION);
+
+        Identifier filterIcon = filterMode == ServoConfig.FilterMode.WHITELIST ? WHITELIST : BLACKLIST;
+        context.drawTexture(RenderPipelines.GUI_TEXTURED, filterIcon, x + 56, y + 15, 0, 0, 16, 16, 16, 16);
     }
 
     @Override

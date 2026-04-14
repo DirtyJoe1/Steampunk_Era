@@ -1,7 +1,7 @@
 package com.steampunkera.block;
 
 import com.steampunkera.util.ServoConfig;
-import com.steampunkera.util.ServoMenuData.ServoData;
+import com.steampunkera.screen.servo.ServoMenuData.ServoData;
 import com.steampunkera.SteampunkEra;
 import com.steampunkera.block.entity.ItemPipeBlockEntity;
 import com.steampunkera.item.WrenchItem;
@@ -222,7 +222,6 @@ public class ItemPipeBlock extends Block implements BlockEntityProvider {
         if (world.getBlockEntity(pos) instanceof ItemPipeBlockEntity pipeBE) {
             for (Direction dir : Direction.values()) {
                 newState = newState.with(getServoPropertyForDirection(dir), pipeBE.hasServo(dir));
-                // Если сервопривод есть, но соединение потеряно — выпадает
                 if (pipeBE.hasServo(dir) && !PipeHelper.isInventoryNotAPipe(world.getBlockState(pos.offset(dir)).getBlock())) {
                     dropServo(world, pos, dir);
                     pipeBE.setServo(dir, false);
