@@ -5,7 +5,9 @@ import com.steampunkera.block.entity.ItemPipeBlockEntity;
 import com.steampunkera.item.ServoItem;
 import com.steampunkera.item.WrenchItem;
 import com.steampunkera.network.ServoPayload;
+import com.steampunkera.network.FilterPayload;
 import com.steampunkera.util.ServoMenuData;
+import com.steampunkera.screen.filter.FilterMenuData;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.itemgroup.v1.FabricItemGroup;
@@ -114,7 +116,9 @@ public class SteampunkEra implements ModInitializer {
 	public void onInitialize() {
 		LOGGER.info("Hello Fabric world!");
 		ServoMenuData.init();
+		FilterMenuData.init();
 		ServoPayload.register();
+		FilterPayload.init();
 
 		ServerLifecycleEvents.SERVER_STOPPING.register((server) -> {
 			TICKING_PIPES.clear();

@@ -168,7 +168,7 @@ public class ItemPipeBlock extends Block implements BlockEntityProvider {
 
                         @Override
                         public @NonNull ServoData getScreenOpeningData(@NonNull ServerPlayerEntity player) {
-                            return new ServoData(pos, side, enabled, config);
+                            return new ServoData(pos, side, enabled, config, 0, 0);
                         }
                     });
                     return ActionResult.SUCCESS;

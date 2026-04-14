@@ -1,6 +1,7 @@
 package com.steampunkera.screen.servo;
 
 import com.steampunkera.util.ServoConfig;
+import com.steampunkera.network.FilterPayload;
 import com.steampunkera.network.ServoPayload;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.gl.RenderPipelines;
@@ -14,6 +15,8 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
 import java.util.List;
+
+import static org.lwjgl.glfw.GLFW.glfwSetCursorPos;
 
 public class ServoScreen extends HandledScreen<ServoMenu> {
 
@@ -57,9 +60,9 @@ public class ServoScreen extends HandledScreen<ServoMenu> {
         this.addDrawableChild(toggleButton);
 
         filterModeButton = ButtonWidget.builder(
-                Text.literal("Filter: " + currentConfig.filterMode().name()),
-                btn -> cycleFilterMode()
-        ).dimensions(x + 64, y + 18, 90, 14).build();
+                Text.literal("Filter"),
+                btn -> openFilterScreen()
+        ).dimensions(x + 64, y + 18, 45, 14).build();
         this.addDrawableChild(filterModeButton);
 
         // Ряд 2: [Иконка] [Route: MODE]
@@ -86,6 +89,11 @@ public class ServoScreen extends HandledScreen<ServoMenu> {
                     sendSettings();
                 });
         this.addDrawableChild(maxSlider);
+
+        // Восстанавливаем позицию мыши при возврате из FilterScreen
+        if (handler.getMouseX() != 0 || handler.getMouseY() != 0) {
+            glfwSetCursorPos(this.client.getWindow().getHandle(), handler.getMouseX(), handler.getMouseY());
+        }
     }
 
     private void toggleEnabled() {
@@ -96,12 +104,14 @@ public class ServoScreen extends HandledScreen<ServoMenu> {
         sendSettings();
     }
 
-    private void cycleFilterMode() {
-        ServoConfig.FilterMode[] modes = ServoConfig.FilterMode.values();
-        int idx = (currentConfig.filterMode().ordinal() + 1) % modes.length;
-        currentConfig = currentConfig.withFilterMode(modes[idx]);
-        if (filterModeButton != null) filterModeButton.setMessage(Text.literal("Filter: " + currentConfig.filterMode().name()));
-        sendSettings();
+    private void openFilterScreen() {
+        if (this.client != null && this.client.player != null) {
+            var mouse = this.client.mouse;
+            int mx = (int) mouse.getX();
+            int my = (int) mouse.getY();
+            ClientPlayNetworking.send(new FilterPayload.OpenFilterScreen(
+                    handler.getPos(), handler.getServoSide(), mx, my));
+        }
     }
 
     private void cycleRoutingMode() {
@@ -123,7 +133,6 @@ public class ServoScreen extends HandledScreen<ServoMenu> {
 
     public void updateConfig(ServoConfig config) {
         this.currentConfig = config;
-        if (filterModeButton != null) filterModeButton.setMessage(Text.literal("Filter: " + config.filterMode().name()));
         if (routingModeButton != null) {
             Text routingText = Text.literal(config.routingMode().name());
             routingModeButton.setMessage(routingText);

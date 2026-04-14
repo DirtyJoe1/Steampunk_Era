@@ -1,7 +1,6 @@
-package com.steampunkera.screen.servo;
+package com.steampunkera.screen.filter;
 
 import com.steampunkera.util.ServoConfig;
-import com.steampunkera.util.ServoMenuData;
 import com.steampunkera.block.entity.ItemPipeBlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
@@ -10,27 +9,28 @@ import net.minecraft.screen.ScreenHandler;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 
-public class ServoMenu extends ScreenHandler {
+public class FilterMenu extends ScreenHandler {
     private final BlockPos pos;
     private final Direction servoSide;
     private final int mouseX, mouseY;
     private boolean enabled;
-    private ServoConfig config;
+    private ServoConfig.FilterMode filterMode;
 
-    public ServoMenu(int syncId, PlayerInventory playerInventory, BlockPos pos, Direction servoSide, boolean enabled, ServoConfig config, int mouseX, int mouseY) {
-        super(ServoMenuData.SERVO_MENU_TYPE, syncId);
+    public FilterMenu(int syncId, PlayerInventory playerInventory, BlockPos pos, Direction servoSide, boolean enabled, ServoConfig.FilterMode filterMode, int mouseX, int mouseY) {
+        super(FilterMenuData.FILTER_MENU_TYPE, syncId);
         this.pos = pos;
         this.servoSide = servoSide;
         this.enabled = enabled;
-        this.config = config;
+        this.filterMode = filterMode;
         this.mouseX = mouseX;
         this.mouseY = mouseY;
         this.addPlayerInventorySlots(playerInventory, 8, 84);
         this.addPlayerHotbarSlots(playerInventory, 8, 142);
     }
 
-    public ServoMenu(int syncId, PlayerInventory playerInventory, ItemPipeBlockEntity blockEntity, Direction servoSide, boolean enabled) {
-        this(syncId, playerInventory, blockEntity != null ? blockEntity.getPos() : BlockPos.ORIGIN, servoSide, enabled, blockEntity != null ? blockEntity.getServoConfig(servoSide) : ServoConfig.DEFAULT, 0, 0);
+    public FilterMenu(int syncId, PlayerInventory playerInventory, ItemPipeBlockEntity blockEntity, Direction servoSide) {
+        this(syncId, playerInventory, blockEntity != null ? blockEntity.getPos() : BlockPos.ORIGIN, servoSide,
+                true, blockEntity != null ? blockEntity.getServoConfig(servoSide).filterMode() : ServoConfig.FilterMode.BLACKLIST, 0, 0);
     }
 
     @Override
@@ -42,8 +42,8 @@ public class ServoMenu extends ScreenHandler {
     public Direction getServoSide() { return servoSide; }
     public boolean isEnabled() { return enabled; }
     public void setEnabled(boolean enabled) { this.enabled = enabled; }
-    public ServoConfig getConfig() { return config; }
-    public void setConfig(ServoConfig config) { this.config = config; }
+    public ServoConfig.FilterMode getFilterMode() { return filterMode; }
+    public void setFilterMode(ServoConfig.FilterMode filterMode) { this.filterMode = filterMode; }
     public int getMouseX() { return mouseX; }
     public int getMouseY() { return mouseY; }
 }

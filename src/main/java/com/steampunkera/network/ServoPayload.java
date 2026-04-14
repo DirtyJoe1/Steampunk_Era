@@ -4,6 +4,8 @@ import com.steampunkera.SteampunkEra;
 import com.steampunkera.block.entity.ItemPipeBlockEntity;
 import com.steampunkera.screen.servo.ServoMenu;
 import com.steampunkera.screen.servo.ServoScreen;
+import com.steampunkera.screen.filter.FilterMenu;
+import com.steampunkera.screen.filter.FilterScreen;
 import com.steampunkera.util.ServoConfig;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
@@ -75,6 +77,21 @@ public final class ServoPayload {
         public Id<? extends CustomPayload> getId() { return ID; }
     }
 
+    // ==================== C2S: Обновление только filterMode ====================
+    public record UpdateFilterMode(BlockPos pos, Direction servoSide, ServoConfig.FilterMode filterMode) implements CustomPayload {
+
+        public static final Id<UpdateFilterMode> ID = new Id<>(Identifier.of(SteampunkEra.MOD_ID, "update_filter_mode"));
+        public static final PacketCodec<RegistryByteBuf, UpdateFilterMode> CODEC = PacketCodec.tuple(
+                BlockPos.PACKET_CODEC, UpdateFilterMode::pos,
+                PacketCodecs.indexed(i -> Direction.values()[i], Direction::ordinal), UpdateFilterMode::servoSide,
+                PacketCodecs.indexed(i -> ServoConfig.FilterMode.values()[i], Enum::ordinal), UpdateFilterMode::filterMode,
+                UpdateFilterMode::new
+        );
+
+        @Override
+        public Id<? extends CustomPayload> getId() { return ID; }
+    }
+
     // ==================== Регистрация ====================
     public static void register() {
         // C2S
@@ -90,6 +107,27 @@ public final class ServoPayload {
             });
         });
 
+        // C2S: UpdateFilterMode
+        PayloadTypeRegistry.playC2S().register(UpdateFilterMode.ID, UpdateFilterMode.CODEC);
+        ServerPlayNetworking.registerGlobalReceiver(UpdateFilterMode.ID, (payload, context) -> {
+            context.server().execute(() -> {
+                if (context.server().getOverworld().getBlockEntity(payload.pos()) instanceof ItemPipeBlockEntity be) {
+                    ServoConfig currentConfig = be.getServoConfig(payload.servoSide());
+                    ServoConfig newConfig = currentConfig.withFilterMode(payload.filterMode());
+                    be.setServoConfig(payload.servoSide(), newConfig);
+                    boolean enabled = true;
+                    if (context.player().currentScreenHandler instanceof ServoMenu sm) {
+                        enabled = sm.isEnabled();
+                    } else if (context.player().currentScreenHandler instanceof FilterMenu fm) {
+                        enabled = fm.isEnabled();
+                    }
+                    // Отправляем обновлённую конфигурацию клиенту
+                    ServoUpdate update = new ServoUpdate(payload.pos(), payload.servoSide(), enabled, newConfig);
+                    ServerPlayNetworking.send(context.player(), update);
+                }
+            });
+        });
+
         // S2C
         PayloadTypeRegistry.playS2C().register(ServoUpdate.ID, ServoUpdate.CODEC);
         ClientPlayNetworking.registerGlobalReceiver(ServoUpdate.ID, (payload, context) -> {
@@ -101,6 +139,14 @@ public final class ServoPayload {
                         if (context.client().currentScreen instanceof ServoScreen screen) {
                             screen.updateButton(payload.enabled());
                             screen.updateConfig(payload.config());
+                        }
+                    }
+                } else if (context.player().currentScreenHandler instanceof FilterMenu fMenu) {
+                    if (fMenu.getServoSide() == payload.servoSide()) {
+                        fMenu.setEnabled(payload.enabled());
+                        fMenu.setFilterMode(payload.config().filterMode());
+                        if (context.client().currentScreen instanceof FilterScreen fScreen) {
+                            fScreen.updateFilterMode(payload.config().filterMode());
                         }
                     }
                 }
