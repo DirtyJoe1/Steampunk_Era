@@ -2,6 +2,8 @@ package com.steampunkera.screen.filter;
 
 import com.steampunkera.util.ServoConfig;
 import com.steampunkera.block.entity.ItemPipeBlockEntity;
+import com.steampunkera.network.FilterPayload;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.SimpleInventory;
@@ -9,6 +11,7 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.slot.Slot;
+import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 
@@ -33,7 +36,7 @@ public class FilterMenu extends ScreenHandler {
         this.mouseX = mouseX;
         this.mouseY = mouseY;
 
-        // Инвентарь для хранения предметов фильтра
+        // Инвентарь для хранения ghost-предметов фильтра
         this.filterInventory = new SimpleInventory(FILTER_SLOTS);
 
         // Загружаем предметы из ServoConfig
@@ -46,7 +49,7 @@ public class FilterMenu extends ScreenHandler {
             }
         }
 
-        // Слоты фильтра (2 строки по 9)
+        // Слоты фильтра (2 строки по 9) — ghost слоты
         for (int row = 0; row < 2; ++row) {
             for (int col = 0; col < 9; ++col) {
                 this.addSlot(new FilterSlot(filterInventory, row * 9 + col, 8 + col * 18, 31 + row * 18));
@@ -70,52 +73,142 @@ public class FilterMenu extends ScreenHandler {
 
     @Override
     public ItemStack quickMove(PlayerEntity player, int slotIndex) {
-        ItemStack newStack = ItemStack.EMPTY;
-        Slot slot = this.slots.get(slotIndex);
-        if (slot != null && slot.hasStack()) {
-            ItemStack originalStack = slot.getStack();
-            newStack = originalStack.copy();
-
-            if (slotIndex < FILTER_SLOTS) {
-                // Из слота фильтра в инвентарь игрока
-                if (!this.insertItem(originalStack, FILTER_SLOTS, this.slots.size(), true)) {
-                    return ItemStack.EMPTY;
-                }
-            } else {
-                // Из инвентаря игрока в слот фильтра
-                if (!this.insertItem(originalStack, 0, FILTER_SLOTS, false)) {
-                    return ItemStack.EMPTY;
-                }
-            }
-
-            if (originalStack.isEmpty()) {
+        // Ghost слоты: при shift-click очищаем слот фильтра
+        if (slotIndex < FILTER_SLOTS) {
+            Slot slot = this.slots.get(slotIndex);
+            if (slot != null && slot.hasStack()) {
                 slot.setStack(ItemStack.EMPTY);
-            } else {
-                slot.markDirty();
+                syncFiltersToServer();
+            }
+            return ItemStack.EMPTY;
+        }
+        
+        // Из инвентаря в фильтр: QuickStack
+        Slot inventorySlot = this.slots.get(slotIndex);
+        if (inventorySlot != null && inventorySlot.hasStack()) {
+            ItemStack stack = inventorySlot.getStack();
+            Item item = stack.getItem();
+            
+            // Ищем первый пустой слот фильтра без дубликата
+            for (int i = 0; i < FILTER_SLOTS; i++) {
+                Slot filterSlot = this.slots.get(i);
+                if (!filterSlot.hasStack()) {
+                    // Проверяем, что такого предмета ещё нет в фильтре
+                    boolean duplicate = false;
+                    for (int j = 0; j < FILTER_SLOTS; j++) {
+                        if (j != i) {
+                            Slot checkSlot = this.slots.get(j);
+                            if (checkSlot.hasStack() && checkSlot.getStack().isOf(item)) {
+                                duplicate = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (!duplicate) {
+                        filterSlot.setStack(new ItemStack(item, 1));
+                        syncFiltersToServer();
+                        break;
+                    }
+                }
             }
         }
-        return newStack;
+        return ItemStack.EMPTY;
+    }
+
+    @Override
+    public void onSlotClick(int slotIndex, int button, SlotActionType actionType, PlayerEntity player) {
+        // Ghost слоты: перехватываем клик и копируем тип предмета без расхода
+        if (slotIndex >= 0 && slotIndex < FILTER_SLOTS) {
+            Slot filterSlot = this.slots.get(slotIndex);
+            ItemStack cursorStack = player.currentScreenHandler.getCursorStack();
+
+            if (actionType == SlotActionType.PICKUP) {
+                if (button == 0) { // ЛКМ
+                    if (cursorStack.isEmpty()) {
+                        // Курсор пустой — удаляем предмет из слота
+                        if (filterSlot.hasStack()) {
+                            filterSlot.setStack(ItemStack.EMPTY);
+                            syncFiltersToServer();
+                        }
+                    } else {
+                        // Курсор с предметом, ставим ghost в слот
+                        Item item = cursorStack.getItem();
+                        // Проверка на дубликаты
+                        if (!hasDuplicate(filterSlot, item)) {
+                            filterSlot.setStack(new ItemStack(item, 1));
+                            syncFiltersToServer();
+                        }
+                    }
+                } else if (button == 1) { // ПКМ
+                    if (cursorStack.isEmpty() && filterSlot.hasStack()) {
+                        // ПКМ по слоту с ghost предметом — очищаем слот
+                        filterSlot.setStack(ItemStack.EMPTY);
+                        syncFiltersToServer();
+                    } else if (!cursorStack.isEmpty()) {
+                        // ПКМ с предметом на курсоре — ставим ghost
+                        Item item = cursorStack.getItem();
+                        if (!hasDuplicate(filterSlot, item)) {
+                            filterSlot.setStack(new ItemStack(item, 1));
+                            syncFiltersToServer();
+                        }
+                    }
+                }
+            } else if (actionType == SlotActionType.SWAP) {
+                // Swap (клавиши 1-9) — ставим ghost предмета из хотбара
+                if (button >= 0 && button < 9) {
+                    ItemStack hotbarStack = player.getInventory().getStack(button);
+                    if (!hotbarStack.isEmpty()) {
+                        Item item = hotbarStack.getItem();
+                        if (!hasDuplicate(filterSlot, item)) {
+                            filterSlot.setStack(new ItemStack(item, 1));
+                            syncFiltersToServer();
+                        }
+                    } else {
+                        // Пустой слот хотбара — очищаем фильтр
+                        if (filterSlot.hasStack()) {
+                            filterSlot.setStack(ItemStack.EMPTY);
+                            syncFiltersToServer();
+                        }
+                    }
+                }
+            } else if (actionType == SlotActionType.QUICK_MOVE) {
+                // Shift-click — очищаем слот
+                if (filterSlot.hasStack()) {
+                    filterSlot.setStack(ItemStack.EMPTY);
+                    syncFiltersToServer();
+                }
+            }
+            // Не вызываем super — предотвращаем расход предметов
+            return;
+        }
+
+        super.onSlotClick(slotIndex, button, actionType, player);
+    }
+
+    private boolean hasDuplicate(Slot exceptSlot, Item item) {
+        for (int i = 0; i < FILTER_SLOTS; i++) {
+            Slot slot = this.slots.get(i);
+            if (slot != exceptSlot && slot.hasStack() && slot.getStack().isOf(item)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void syncFiltersToServer() {
+        java.util.List<Item> items = new ArrayList<>();
+        for (int i = 0; i < FILTER_SLOTS; i++) {
+            ItemStack stack = filterInventory.getStack(i);
+            if (!stack.isEmpty()) {
+                items.add(stack.getItem());
+            }
+        }
+        // На клиенте отправляем пакет на сервер
+        ClientPlayNetworking.send(new FilterPayload.UpdateFilterItems(pos, servoSide, items));
     }
 
     @Override
     public boolean canUse(PlayerEntity player) { return true; }
-
-    @Override
-    public void onClosed(PlayerEntity player) {
-        super.onClosed(player);
-        if (player.getEntityWorld().getBlockEntity(pos) instanceof ItemPipeBlockEntity pipe) {
-            ServoConfig config = pipe.getServoConfig(servoSide);
-            java.util.List<Item> filterItems = new ArrayList<>();
-            for (int i = 0; i < FILTER_SLOTS; i++) {
-                ItemStack stack = filterInventory.getStack(i);
-                if (!stack.isEmpty()) {
-                    filterItems.add(stack.getItem());
-                }
-            }
-            config = config.withFilterMode(filterMode).withFilterItems(filterItems);
-            pipe.setServoConfig(servoSide, config);
-        }
-    }
 
     public BlockPos getPos() { return pos; }
     public Direction getServoSide() { return servoSide; }
@@ -128,7 +221,7 @@ public class FilterMenu extends ScreenHandler {
     public SimpleInventory getFilterInventory() { return filterInventory; }
 
     /**
-     * Кастомный слот, ограничивающий вставку по 1 предмету и запрещающий дубликаты (как фильтр в EnderIO)
+     * Ghost слот — отображает предмет, но не расходует его из инвентаря игрока
      */
     private class FilterSlot extends Slot {
         public FilterSlot(net.minecraft.inventory.Inventory inventory, int index, int x, int y) {
@@ -136,23 +229,18 @@ public class FilterMenu extends ScreenHandler {
         }
 
         @Override
+        public boolean canInsert(ItemStack stack) {
+            return false; // Ghost слот — не принимает предметы из инвентаря
+        }
+
+        @Override
+        public boolean canTakeItems(PlayerEntity playerEntity) {
+            return false; // Нельзя забрать ghost предмет
+        }
+
+        @Override
         public int getMaxItemCount() {
             return 1;
-        }
-
-        @Override
-        public int getMaxItemCount(ItemStack stack) {
-            return 1;
-        }
-
-        @Override
-        public boolean canInsert(ItemStack stack) {
-            for (int i = 0; i < FILTER_SLOTS; i++) {
-                if (i != this.id && filterInventory.getStack(i).isOf(stack.getItem())) {
-                    return false;
-                }
-            }
-            return true;
         }
     }
 }

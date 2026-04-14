@@ -6,20 +6,26 @@ import com.steampunkera.screen.filter.FilterMenuData;
 import com.steampunkera.screen.servo.ServoMenu;
 import com.steampunkera.block.entity.ItemPipeBlockEntity;
 import com.steampunkera.screen.servo.ServoMenuData;
+import com.steampunkera.util.ServoConfig;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.item.Item;
 import net.minecraft.network.RegistryByteBuf;
 import net.minecraft.network.codec.PacketCodec;
 import net.minecraft.network.packet.CustomPayload;
+import net.minecraft.registry.Registries;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public final class FilterPayload {
 
@@ -46,14 +52,16 @@ public final class FilterPayload {
         }
     }
 
-    public record BackToServo(BlockPos pos, Direction servoSide, boolean enabled, int mouseX, int mouseY) implements CustomPayload {
+    public record BackToServo(BlockPos pos, Direction servoSide, boolean enabled, int mouseX, int mouseY,
+                               ServoConfig.FilterMode filterMode, List<Item> filterItems) implements CustomPayload {
         public static final Id<BackToServo> ID = new Id<>(id("back_to_servo"));
         public static final PacketCodec<RegistryByteBuf, BackToServo> CODEC = PacketCodec.of(
                 BackToServo::write, BackToServo::new
         );
 
         private BackToServo(RegistryByteBuf buf) {
-            this(buf.readBlockPos(), Direction.values()[buf.readInt()], buf.readBoolean(), buf.readInt(), buf.readInt());
+            this(buf.readBlockPos(), Direction.values()[buf.readInt()], buf.readBoolean(), buf.readInt(), buf.readInt(),
+                 ServoConfig.FilterMode.values()[buf.readInt()], decodeItems(buf));
         }
 
         private void write(RegistryByteBuf buf) {
@@ -62,6 +70,11 @@ public final class FilterPayload {
             buf.writeBoolean(enabled);
             buf.writeInt(mouseX);
             buf.writeInt(mouseY);
+            buf.writeInt(filterMode.ordinal());
+            buf.writeInt(filterItems.size());
+            for (Item item : filterItems) {
+                buf.writeIdentifier(Registries.ITEM.getId(item));
+            }
         }
 
         @Override
@@ -74,10 +87,16 @@ public final class FilterPayload {
                 context.server().execute(() -> {
                     if (context.server().getOverworld().getBlockEntity(payload.pos()) instanceof ItemPipeBlockEntity pipe) {
                         var servoSide = payload.servoSide();
-                        var config = pipe.getServoConfig(servoSide);
                         var enabled = payload.enabled();
                         final int mouseX = payload.mouseX();
                         final int mouseY = payload.mouseY();
+                        
+                        // Обновляем конфиг актуальными данными из фильтра
+                        ServoConfig config = pipe.getServoConfig(servoSide)
+                            .withFilterMode(payload.filterMode())
+                            .withFilterItems(payload.filterItems());
+                        pipe.setServoConfig(servoSide, config);
+                        
                         ExtendedScreenHandlerFactory<ServoMenuData.ServoData> factory =
                                 new ExtendedScreenHandlerFactory<>() {
                             @Override
@@ -96,6 +115,46 @@ public final class FilterPayload {
                             }
                         };
                         context.player().openHandledScreen(factory);
+                    }
+                });
+            });
+        }
+    }
+
+    /**
+     * Клиент → Сервер: обновление списка ghost-предметов фильтра
+     */
+    public record UpdateFilterItems(BlockPos pos, Direction servoSide, List<Item> filterItems) implements CustomPayload {
+        public static final Id<UpdateFilterItems> ID = new Id<>(id("update_filter_items"));
+        public static final PacketCodec<RegistryByteBuf, UpdateFilterItems> CODEC = PacketCodec.of(
+                UpdateFilterItems::write, UpdateFilterItems::new
+        );
+
+        private UpdateFilterItems(RegistryByteBuf buf) {
+            this(buf.readBlockPos(), Direction.values()[buf.readInt()], decodeItems(buf));
+        }
+
+        private void write(RegistryByteBuf buf) {
+            buf.writeBlockPos(pos);
+            buf.writeInt(servoSide.ordinal());
+            buf.writeInt(filterItems.size());
+            for (Item item : filterItems) {
+                buf.writeIdentifier(Registries.ITEM.getId(item));
+            }
+        }
+
+        @Override
+        public Id<? extends CustomPayload> getId() {
+            return ID;
+        }
+
+        public static void registerServerReceiver() {
+            ServerPlayNetworking.registerGlobalReceiver(ID, (payload, context) -> {
+                context.server().execute(() -> {
+                    if (context.server().getOverworld().getBlockEntity(payload.pos()) instanceof ItemPipeBlockEntity pipe) {
+                        ServoConfig config = pipe.getServoConfig(payload.servoSide());
+                        config = config.withFilterItems(payload.filterItems());
+                        pipe.setServoConfig(payload.servoSide(), config);
                     }
                 });
             });
@@ -138,10 +197,21 @@ public final class FilterPayload {
         return Identifier.of(SteampunkEra.MOD_ID, path);
     }
 
+    private static List<Item> decodeItems(RegistryByteBuf buf) {
+        int count = buf.readInt();
+        List<Item> items = new ArrayList<>(count);
+        for (int i = 0; i < count; i++) {
+            items.add(Registries.ITEM.get(buf.readIdentifier()));
+        }
+        return items;
+    }
+
     public static void init() {
         PayloadTypeRegistry.playC2S().register(OpenFilterScreen.ID, OpenFilterScreen.CODEC);
         PayloadTypeRegistry.playC2S().register(BackToServo.ID, BackToServo.CODEC);
+        PayloadTypeRegistry.playC2S().register(UpdateFilterItems.ID, UpdateFilterItems.CODEC);
         registerServerReceiver();
         BackToServo.registerServerReceiver();
+        UpdateFilterItems.registerServerReceiver();
     }
 }
