@@ -27,6 +27,8 @@ public class ServoScreen extends HandledScreen<ServoMenu> {
     private static final Identifier ICON_ROUND_ROBIN = Identifier.of("steampunk-era", "textures/gui/round_robin.png");
     private static final Identifier ICON_NEAREST_FIRST = Identifier.of("steampunk-era", "textures/gui/nearest_first.png");
     private static final Identifier ICON_FURTHEST_FIRST = Identifier.of("steampunk-era", "textures/gui/furthest_first.png");
+    private static final Identifier WHITELIST = Identifier.of("steampunk-era", "textures/gui/whitelist.png");
+    private static final Identifier BLACKLIST = Identifier.of("steampunk-era", "textures/gui/blacklist.png");
 
     private boolean enabled;
     private ServoConfig currentConfig;
@@ -52,7 +54,7 @@ public class ServoScreen extends HandledScreen<ServoMenu> {
         int x = (this.width - this.backgroundWidth) / 2;
         int y = (this.height - this.backgroundHeight) / 2;
 
-        // Ряд 1: [Факел] [ON/OFF] [Filter: MODE]
+        // Ряд 1: [Факел] [ON/OFF] [Иконка фильтра] [Filter]
         toggleButton = ButtonWidget.builder(
                 Text.literal(enabled ? "ON" : "OFF"),
                 btn -> toggleEnabled()
@@ -62,7 +64,7 @@ public class ServoScreen extends HandledScreen<ServoMenu> {
         filterModeButton = ButtonWidget.builder(
                 Text.literal("Filter"),
                 btn -> openFilterScreen()
-        ).dimensions(x + 64, y + 18, 45, 14).build();
+        ).dimensions(x + 82, y + 18, 45, 14).build();
         this.addDrawableChild(filterModeButton);
 
         // Ряд 2: [Иконка] [Route: MODE]
@@ -166,13 +168,14 @@ public class ServoScreen extends HandledScreen<ServoMenu> {
         int y = (this.height - this.backgroundHeight) / 2;
         context.drawTexture(RenderPipelines.GUI_TEXTURED, TEXTURE, x, y, 0f, 0f, this.backgroundWidth, this.backgroundHeight, TEXTURE_RESOLUTION, TEXTURE_RESOLUTION);
 
-        // Иконка факела слева от ON/OFF
         Identifier torch = enabled ? TORCH_ON : TORCH_OFF;
         context.drawTexture(RenderPipelines.GUI_TEXTURED, torch, x + 8, y + 18, 0, 0, 16, 16, 16, 16);
 
-        // Иконка режима маршрутизации слева от кнопки Route
         Identifier routingIcon = getRoutingModeIcon(currentConfig.routingMode());
         context.drawTexture(RenderPipelines.GUI_TEXTURED, routingIcon, x + 8, y + 36, 0, 0, 16, 16, 16, 16);
+
+        Identifier filterIcon = currentConfig.filterMode() == ServoConfig.FilterMode.WHITELIST ? WHITELIST : BLACKLIST;
+        context.drawTexture(RenderPipelines.GUI_TEXTURED, filterIcon, x + 64, y + 18, 0, 0, 16, 16, 16, 16);
     }
 
     @Override
