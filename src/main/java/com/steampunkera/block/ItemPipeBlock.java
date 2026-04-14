@@ -13,7 +13,6 @@ import net.minecraft.block.BlockEntityProvider;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.ShapeContext;
 import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemPlacementContext;
@@ -29,7 +28,6 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
@@ -238,14 +236,7 @@ public class ItemPipeBlock extends Block implements BlockEntityProvider {
                 be.setServo(dir, false);
                 be.setServoConfig(dir, ServoConfig.DEFAULT);
             }
-            Vec3d dropPos = Vec3d.ofCenter(pos).offset(dir, 0.5);
-            ItemEntity itemEntity = new ItemEntity(world, dropPos.x, dropPos.y, dropPos.z, new ItemStack(SteampunkEra.SERVOS_ITEM));
-            itemEntity.setVelocity(
-                    (world.random.nextDouble() - 0.5) * 0.1,
-                    0.2,
-                    (world.random.nextDouble() - 0.5) * 0.1
-            );
-            world.spawnEntity(itemEntity);
+            PipeHelper.dropItemAtOffset(world, pos, dir, new ItemStack(SteampunkEra.SERVO), 0.1);
         }
     }
 

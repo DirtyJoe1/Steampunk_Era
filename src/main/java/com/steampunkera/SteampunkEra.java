@@ -32,14 +32,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 public class SteampunkEra implements ModInitializer {
 	public static final String MOD_ID = "steampunk-era";
 
 	public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
-	public static final Set<ItemPipeBlockEntity> TICKING_PIPES = ConcurrentHashMap.newKeySet();
+	public static final Set<ItemPipeBlockEntity> TICKING_PIPES = new CopyOnWriteArraySet<>();
 
 	public static final ComponentType<NbtCompound> PIPE_DATA_COMPONENT = Registry.register(
 			Registries.DATA_COMPONENT_TYPE,
@@ -66,8 +66,6 @@ public class SteampunkEra implements ModInitializer {
 			new ServoItem(new Item.Settings()
 					.registryKey(RegistryKey.of(RegistryKeys.ITEM, id("servo"))))
 	);
-
-	public static final Item SERVOS_ITEM = SERVO;
 
 	public static final Block ITEM_PIPE = registerBlock(
 			"item_pipe",

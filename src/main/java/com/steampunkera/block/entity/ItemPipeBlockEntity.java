@@ -20,16 +20,17 @@ import net.minecraft.world.World;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class ItemPipeBlockEntity extends BlockEntity {
 
-    private static final Direction[] ALL = Direction.values();
+    private static final Direction[] ALL_DIRECTIONS = Direction.values();
 
     private final Map<Direction, Boolean> disabledConnections = new EnumMap<>(Direction.class);
     private final Map<Direction, Boolean> servoAttachments = new EnumMap<>(Direction.class);
     private final Map<Direction, ServoConfig> servoConfigs = new EnumMap<>(Direction.class);
     private final Map<Direction, Integer> tickCounters = new EnumMap<>(Direction.class);
-    private int roundRobinIndex = 0;
+    private final AtomicInteger roundRobinIndex = new AtomicInteger(0);
 
     public ItemPipeBlockEntity(BlockPos pos, BlockState state) {
         super(SteampunkEra.ITEM_PIPE_BLOCK_ENTITY_TYPE, pos, state);
@@ -38,19 +39,19 @@ public class ItemPipeBlockEntity extends BlockEntity {
     }
 
     private void initDefaults() {
-        for (Direction dir : ALL) {
+        for (Direction dir : ALL_DIRECTIONS) {
             disabledConnections.put(dir, false);
             servoAttachments.put(dir, false);
             servoConfigs.put(dir, ServoConfig.DEFAULT);
             tickCounters.put(dir, 0);
         }
-        roundRobinIndex = 0;
+        roundRobinIndex.set(0);
     }
 
     @Override
     protected void writeData(WriteView view) {
         super.writeData(view);
-        for (Direction dir : ALL) {
+        for (Direction dir : ALL_DIRECTIONS) {
             String key = dir.asString();
             view.putBoolean("disabled_" + key, disabledConnections.getOrDefault(dir, false));
             view.putBoolean("servo_" + key, servoAttachments.getOrDefault(dir, false));
@@ -60,13 +61,13 @@ public class ItemPipeBlockEntity extends BlockEntity {
                 view.put("config_" + key, NbtCompound.CODEC, nbt);
             }
         }
-        view.putInt("roundRobin", roundRobinIndex);
+        view.putInt("roundRobin", roundRobinIndex.get());
     }
 
     @Override
     protected void readData(ReadView view) {
         super.readData(view);
-        for (Direction dir : ALL) {
+        for (Direction dir : ALL_DIRECTIONS) {
             String key = dir.asString();
             disabledConnections.put(dir, view.getBoolean("disabled_" + key, false));
             servoAttachments.put(dir, view.getBoolean("servo_" + key, false));
@@ -77,7 +78,7 @@ public class ItemPipeBlockEntity extends BlockEntity {
             );
             tickCounters.put(dir, 0);
         }
-        roundRobinIndex = view.getInt("roundRobin", 0);
+        roundRobinIndex.set(view.getInt("roundRobin", 0));
     }
 
     @Override
@@ -93,7 +94,7 @@ public class ItemPipeBlockEntity extends BlockEntity {
             return;
         }
 
-        for (Direction dir : ALL) {
+        for (Direction dir : ALL_DIRECTIONS) {
             if (!servoAttachments.getOrDefault(dir, false)) continue;
             ServoConfig config = servoConfigs.getOrDefault(dir, ServoConfig.DEFAULT);
             if (!config.enabled()) continue;
@@ -137,7 +138,7 @@ public class ItemPipeBlockEntity extends BlockEntity {
         }
     }
 
-    public int getAndIncrementRoundRobin() { return roundRobinIndex++; }
+    public int getAndIncrementRoundRobin() { return roundRobinIndex.getAndIncrement(); }
 
     public boolean isDisabled(Direction dir) { return disabledConnections.getOrDefault(dir, false); }
     public void toggleDisabled(Direction dir) {

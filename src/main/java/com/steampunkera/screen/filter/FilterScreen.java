@@ -23,10 +23,29 @@ import static org.lwjgl.glfw.GLFW.glfwSetCursorPos;
 
 public class FilterScreen extends HandledScreen<FilterMenu> {
 
+    // Текстуры
     private static final Identifier TEXTURE = Identifier.of("steampunk-era", "textures/gui/filter_gui.png");
     private static final int TEXTURE_RESOLUTION = 256;
     private static final Identifier WHITELIST = Identifier.of("steampunk-era", "textures/gui/whitelist.png");
     private static final Identifier BLACKLIST = Identifier.of("steampunk-era", "textures/gui/blacklist.png");
+    
+    // Размеры GUI
+    private static final int GUI_WIDTH = 176;
+    private static final int GUI_HEIGHT = 166;
+    private static final int INVENTORY_TITLE_Y = 72;
+    
+    // Размеры кнопок
+    private static final int BUTTON_HEIGHT = 14;
+    private static final int BUTTON_BACK_WIDTH = 20;
+    private static final int BUTTON_CLEAR_WIDTH = 20;
+    
+    // Позиции элементов
+    private static final int BUTTON_BACK_X = 8;
+    private static final int BUTTON_MODE_X = 48;
+    private static final int BUTTON_CLEAR_X = 130;
+    private static final int ROW_Y = 15;
+    private static final int ICON_X = 30;
+    private static final int ICON_SIZE = 16;
 
     private ServoConfig.FilterMode filterMode;
 
@@ -36,9 +55,9 @@ public class FilterScreen extends HandledScreen<FilterMenu> {
 
     public FilterScreen(FilterMenu menu, PlayerInventory inventory, Text title) {
         super(menu, inventory, title);
-        this.backgroundWidth = 176;
-        this.backgroundHeight = 166;
-        this.playerInventoryTitleY = 72;
+        this.backgroundWidth = GUI_WIDTH;
+        this.backgroundHeight = GUI_HEIGHT;
+        this.playerInventoryTitleY = INVENTORY_TITLE_Y;
         this.filterMode = menu.getFilterMode();
     }
 
@@ -62,25 +81,25 @@ public class FilterScreen extends HandledScreen<FilterMenu> {
         backButton = ButtonWidget.builder(
                 Text.literal("<-"),
                 btn -> goBack()
-        ).dimensions(x + 8, y + 15, 20, 14).build();
+        ).dimensions(x + BUTTON_BACK_X, y + ROW_Y, BUTTON_BACK_WIDTH, BUTTON_HEIGHT).build();
         this.addDrawableChild(backButton);
 
         // Иконка режима — сразу после кнопки назад
-        // Рисуется в drawBackground() на x + 30
+        // Рисуется в drawBackground() на x + ICON_X
         
         // Кнопка режима — справа от иконки
         int filterButtonWidth = this.textRenderer.getWidth(Text.literal(filterMode.name())) + 8;
         filterModeButton = ButtonWidget.builder(
                 Text.literal(filterMode.name()),
                 btn -> cycleFilterMode()
-        ).dimensions(x + 48, y + 15, filterButtonWidth, 14).build();
+        ).dimensions(x + BUTTON_MODE_X, y + ROW_Y, filterButtonWidth, BUTTON_HEIGHT).build();
         this.addDrawableChild(filterModeButton);
         
         // Кнопка "X" — очистить фильтр
         clearButton = ButtonWidget.builder(
                 Text.literal("X"),
                 btn -> clearFilter()
-        ).dimensions(x + 130, y + 15, 20, 14).build();
+        ).dimensions(x + BUTTON_CLEAR_X, y + ROW_Y, BUTTON_CLEAR_WIDTH, BUTTON_HEIGHT).build();
         this.addDrawableChild(clearButton);
     }
 
@@ -132,7 +151,7 @@ public class FilterScreen extends HandledScreen<FilterMenu> {
         context.drawTexture(RenderPipelines.GUI_TEXTURED, TEXTURE, x, y, 0f, 0f, this.backgroundWidth, this.backgroundHeight, TEXTURE_RESOLUTION, TEXTURE_RESOLUTION);
 
         Identifier filterIcon = filterMode == ServoConfig.FilterMode.WHITELIST ? WHITELIST : BLACKLIST;
-        context.drawTexture(RenderPipelines.GUI_TEXTURED, filterIcon, x + 30, y + 15, 0, 0, 16, 16, 16, 16);
+        context.drawTexture(RenderPipelines.GUI_TEXTURED, filterIcon, x + ICON_X, y + ROW_Y, 0, 0, ICON_SIZE, ICON_SIZE, ICON_SIZE, ICON_SIZE);
     }
 
     @Override
@@ -158,9 +177,9 @@ public class FilterScreen extends HandledScreen<FilterMenu> {
         this.drawMouseoverTooltip(context, mouseX, mouseY);
 
         List<OrderedText> tooltipLines = null;
-        int iconX = (this.width - this.backgroundWidth) / 2 + 30;
-        int iconY = (this.height - this.backgroundHeight) / 2 + 15;
-        if (mouseX >= iconX && mouseX < iconX + 16 && mouseY >= iconY && mouseY < iconY + 16) {
+        int iconX = (this.width - this.backgroundWidth) / 2 + ICON_X;
+        int iconY = (this.height - this.backgroundHeight) / 2 + ROW_Y;
+        if (mouseX >= iconX && mouseX < iconX + ICON_SIZE && mouseY >= iconY && mouseY < iconY + ICON_SIZE) {
             tooltipLines = this.textRenderer.wrapLines(Text.literal("Current mode: " + filterMode.name()), 150);
         } else if (filterModeButton != null && filterModeButton.isMouseOver(mouseX, mouseY)) {
             tooltipLines = this.textRenderer.wrapLines(Text.literal("Toggle between Whitelist and Blacklist mode"), 150);

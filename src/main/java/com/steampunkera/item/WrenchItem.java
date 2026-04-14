@@ -6,7 +6,6 @@ import com.steampunkera.block.ItemPipeBlock;
 import com.steampunkera.block.entity.ItemPipeBlockEntity;
 import com.steampunkera.util.PipeHelper;
 import net.minecraft.block.BlockState;
-import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -17,7 +16,6 @@ import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
 public class WrenchItem extends Item {
@@ -50,7 +48,7 @@ public class WrenchItem extends Item {
             if (blockEntity != null) {
                 for (Direction dir : Direction.values()) {
                     if (blockEntity.hasServo(dir)) {
-                        dropItem(world, pos, new ItemStack(SteampunkEra.SERVOS_ITEM, 1));
+                        dropItem(world, pos, new ItemStack(SteampunkEra.SERVO, 1));
                     }
                 }
             }
@@ -76,7 +74,7 @@ public class WrenchItem extends Item {
         if (blockEntity.hasServo(side)) {
             blockEntity.setServo(side, false);
             blockEntity.setServoConfig(side, ServoConfig.DEFAULT);
-            dropItem(world, pos, new ItemStack(SteampunkEra.SERVOS_ITEM, 1));
+            dropItem(world, pos, new ItemStack(SteampunkEra.SERVO, 1));
             world.playSound(null, pos, SoundEvents.BLOCK_METAL_PLACE, SoundCategory.BLOCKS, 1.0f, 1.0f);
             player.sendMessage(Text.literal("Servo dismantled"), true);
             updatePipeConnections(world, pos);
@@ -103,14 +101,7 @@ public class WrenchItem extends Item {
     }
 
     private void dropItem(World world, BlockPos pos, ItemStack stack) {
-        Vec3d dropPos = Vec3d.ofCenter(pos).add(0, 0.5, 0);
-        ItemEntity itemEntity = new ItemEntity(world, dropPos.x, dropPos.y, dropPos.z, stack);
-        itemEntity.setVelocity(
-            (world.random.nextDouble() - 0.5) * 0.1,
-            0.2,
-            (world.random.nextDouble() - 0.5) * 0.1
-        );
-        world.spawnEntity(itemEntity);
+        PipeHelper.dropItemAt(world, pos, stack, 0.1);
     }
 
     private void updatePipeConnections(World world, BlockPos pos) {
