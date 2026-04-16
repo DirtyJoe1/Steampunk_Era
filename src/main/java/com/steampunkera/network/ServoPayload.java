@@ -6,6 +6,7 @@ import com.steampunkera.screen.servo.ServoMenu;
 import com.steampunkera.screen.servo.ServoScreen;
 import com.steampunkera.screen.filter.FilterMenu;
 import com.steampunkera.screen.filter.FilterScreen;
+import com.steampunkera.util.FilterUtil;
 import com.steampunkera.util.ServoConfig;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
@@ -28,7 +29,7 @@ public final class ServoPayload {
     // ==================== C2S: Клиент -> Сервер (настройки) ====================
     public record ServoSettings(BlockPos pos, Direction servoSide,
                                 boolean enabled,
-                                ServoConfig.FilterMode filterMode,
+                                FilterUtil.FilterMode filterMode,
                                 ServoConfig.RoutingMode routingMode,
                                 int extractInterval,
                                 int maxExtract,
@@ -39,7 +40,7 @@ public final class ServoPayload {
                 BlockPos.PACKET_CODEC, ServoSettings::pos,
                 PacketCodecs.indexed(i -> Direction.values()[i], Direction::ordinal), ServoSettings::servoSide,
                 PacketCodecs.BOOLEAN, ServoSettings::enabled,
-                PacketCodecs.indexed(i -> ServoConfig.FilterMode.values()[i], Enum::ordinal), ServoSettings::filterMode,
+                PacketCodecs.indexed(i -> FilterUtil.FilterMode.values()[i], Enum::ordinal), ServoSettings::filterMode,
                 PacketCodecs.indexed(i -> ServoConfig.RoutingMode.values()[i], Enum::ordinal), ServoSettings::routingMode,
                 PacketCodecs.INTEGER, ServoSettings::extractInterval,
                 PacketCodecs.INTEGER, ServoSettings::maxExtract,
@@ -78,13 +79,13 @@ public final class ServoPayload {
     }
 
     // ==================== C2S: Обновление только filterMode ====================
-    public record UpdateFilterMode(BlockPos pos, Direction servoSide, ServoConfig.FilterMode filterMode) implements CustomPayload {
+    public record UpdateFilterMode(BlockPos pos, Direction servoSide, FilterUtil.FilterMode filterMode) implements CustomPayload {
 
         public static final Id<UpdateFilterMode> ID = new Id<>(Identifier.of(SteampunkEra.MOD_ID, "update_filter_mode"));
         public static final PacketCodec<RegistryByteBuf, UpdateFilterMode> CODEC = PacketCodec.tuple(
                 BlockPos.PACKET_CODEC, UpdateFilterMode::pos,
                 PacketCodecs.indexed(i -> Direction.values()[i], Direction::ordinal), UpdateFilterMode::servoSide,
-                PacketCodecs.indexed(i -> ServoConfig.FilterMode.values()[i], Enum::ordinal), UpdateFilterMode::filterMode,
+                PacketCodecs.indexed(i -> FilterUtil.FilterMode.values()[i], Enum::ordinal), UpdateFilterMode::filterMode,
                 UpdateFilterMode::new
         );
 

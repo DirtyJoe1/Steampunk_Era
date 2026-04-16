@@ -59,12 +59,17 @@ public class ServoItem extends Item {
         if (blockEntity.hasServo(side)) {
             player.sendMessage(Text.literal("Servo already installed"), true);
             return ActionResult.FAIL;
-        } else {
-            blockEntity.setServo(side, true);
-            player.sendMessage(Text.literal("Servo installed"), true);
-            context.getStack().decrement(1);
-            world.playSound(null, pos, SoundEvents.BLOCK_METAL_PLACE, SoundCategory.BLOCKS, 1.0f, 1.0f);
-            return ActionResult.SUCCESS;
         }
+        
+        if (blockEntity.hasFilter(side)) {
+            player.sendMessage(Text.literal("Cannot place servo: filter already installed on this side"), true);
+            return ActionResult.FAIL;
+        }
+        
+        blockEntity.setServo(side, true);
+        player.sendMessage(Text.literal("Servo installed"), true);
+        context.getStack().decrement(1);
+        world.playSound(null, pos, SoundEvents.BLOCK_METAL_PLACE, SoundCategory.BLOCKS, 1.0f, 1.0f);
+        return ActionResult.SUCCESS;
     }
 }

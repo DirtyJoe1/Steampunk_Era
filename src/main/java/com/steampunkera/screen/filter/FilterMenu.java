@@ -1,5 +1,6 @@
 package com.steampunkera.screen.filter;
 
+import com.steampunkera.util.FilterUtil;
 import com.steampunkera.util.ServoConfig;
 import com.steampunkera.block.entity.ItemPipeBlockEntity;
 import com.steampunkera.network.FilterPayload;
@@ -22,12 +23,12 @@ public class FilterMenu extends ScreenHandler {
     private final Direction servoSide;
     private final int mouseX, mouseY;
     private boolean enabled;
-    private ServoConfig.FilterMode filterMode;
+    private FilterUtil.FilterMode filterMode;
 
     private final SimpleInventory filterInventory;
     private static final int FILTER_SLOTS = 18;
 
-    public FilterMenu(int syncId, PlayerInventory playerInventory, BlockPos pos, Direction servoSide, boolean enabled, ServoConfig.FilterMode filterMode, java.util.List<Item> filterItems, int mouseX, int mouseY) {
+    public FilterMenu(int syncId, PlayerInventory playerInventory, BlockPos pos, Direction servoSide, boolean enabled, FilterUtil.FilterMode filterMode, java.util.List<Item> filterItems, int mouseX, int mouseY) {
         super(FilterMenuData.FILTER_MENU_TYPE, syncId);
         this.pos = pos;
         this.servoSide = servoSide;
@@ -66,7 +67,7 @@ public class FilterMenu extends ScreenHandler {
                 blockEntity != null ? blockEntity.getPos() : BlockPos.ORIGIN,
                 servoSide,
                 true,
-                blockEntity != null ? blockEntity.getServoConfig(servoSide).filterMode() : ServoConfig.FilterMode.BLACKLIST,
+                blockEntity != null ? blockEntity.getServoConfig(servoSide).filterMode() : FilterUtil.FilterMode.BLACKLIST,
                 blockEntity != null ? blockEntity.getServoConfig(servoSide).filterItems() : java.util.List.of(),
                 0, 0);
     }
@@ -214,8 +215,8 @@ public class FilterMenu extends ScreenHandler {
     public Direction getServoSide() { return servoSide; }
     public boolean isEnabled() { return enabled; }
     public void setEnabled(boolean enabled) { this.enabled = enabled; }
-    public ServoConfig.FilterMode getFilterMode() { return filterMode; }
-    public void setFilterMode(ServoConfig.FilterMode filterMode) { this.filterMode = filterMode; }
+    public FilterUtil.FilterMode getFilterMode() { return filterMode; }
+    public void setFilterMode(FilterUtil.FilterMode filterMode) { this.filterMode = filterMode; }
     public int getMouseX() { return mouseX; }
     public int getMouseY() { return mouseY; }
     public SimpleInventory getFilterInventory() { return filterInventory; }

@@ -46,6 +46,13 @@ public class WrenchItem extends Item {
         if (player.isSneaking()) {
             ItemPipeBlockEntity blockEntity = (ItemPipeBlockEntity) world.getBlockEntity(pos);
             if (blockEntity != null) {
+                // Выбрасываем все фильтры
+                for (Direction dir : Direction.values()) {
+                    if (blockEntity.hasFilter(dir)) {
+                        dropItem(world, pos, new ItemStack(SteampunkEra.FILTER, 1));
+                    }
+                }
+                // Выбрасываем все сервоприводы
                 for (Direction dir : Direction.values()) {
                     if (blockEntity.hasServo(dir)) {
                         dropItem(world, pos, new ItemStack(SteampunkEra.SERVO, 1));
@@ -69,6 +76,16 @@ public class WrenchItem extends Item {
         BlockState neighborState = world.getBlockState(neighborPos);
         if (!PipeHelper.isValidConnectionTarget(neighborState.getBlock())) {
             return ActionResult.PASS;
+        }
+
+        // Сначала проверяем фильтр на этой стороне (приоритет перед сервоприводом)
+        if (blockEntity.hasFilter(side)) {
+            blockEntity.setFilter(side, false);
+            dropItem(world, pos, new ItemStack(SteampunkEra.FILTER, 1));
+            world.playSound(null, pos, SoundEvents.BLOCK_METAL_PLACE, SoundCategory.BLOCKS, 1.0f, 1.0f);
+            player.sendMessage(Text.literal("Filter dismantled"), true);
+            updatePipeConnections(world, pos);
+            return ActionResult.SUCCESS;
         }
 
         if (blockEntity.hasServo(side)) {

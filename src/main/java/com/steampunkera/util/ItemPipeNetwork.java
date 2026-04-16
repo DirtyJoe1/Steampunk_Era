@@ -21,7 +21,7 @@ public final class ItemPipeNetwork {
                                             Direction extractSide, ServoConfig.RoutingMode routingMode,
                                             ItemPipeBlockEntity sourceBE) {
         BlockPos sourceBlockPos = fromPos.offset(extractSide);
-        List<InventoryTarget> targets = findInventoryTargets(world, fromPos, extractSide, sourceBlockPos);
+        List<InventoryTarget> targets = findInventoryTargets(world, fromPos, extractSide, sourceBlockPos, variant);
 
         if (targets.isEmpty()) return 0;
 
@@ -56,7 +56,7 @@ public final class ItemPipeNetwork {
         return totalInserted;
     }
 
-    private static List<InventoryTarget> findInventoryTargets(World world, BlockPos startPos, Direction extractSide, BlockPos sourceBlockPos) {
+    private static List<InventoryTarget> findInventoryTargets(World world, BlockPos startPos, Direction extractSide, BlockPos sourceBlockPos, ItemVariant variant) {
         List<InventoryTarget> targets = new ArrayList<>();
         Set<BlockPos> visited = new HashSet<>();
         Queue<BfsNode> queue = new ArrayDeque<>();
@@ -79,6 +79,14 @@ public final class ItemPipeNetwork {
                 if (world.getBlockState(neighborPos).getBlock() instanceof ItemPipeBlock) {
                     if (world.getBlockEntity(neighborPos) instanceof ItemPipeBlockEntity pipeBE) {
                         if (pipeBE.hasServo(dir.getOpposite())) continue;
+                        // Проверяем фильтр на стороне входа в соседнюю трубу
+                        Direction entrySide = dir.getOpposite();
+                        if (pipeBE.hasFilter(entrySide)) {
+                            if (!pipeBE.getFilterConfig(entrySide).matchesFilter(variant.getItem())) {
+                                // Предмет не проходит фильтр, не проходим через эту трубу
+                                continue;
+                            }
+                        }
                     }
                     queue.add(new BfsNode(neighborPos, distance + 1));
                 } else {

@@ -1,8 +1,7 @@
 package com.steampunkera.screen.filter;
 
-import com.steampunkera.util.ServoConfig;
-import com.steampunkera.network.FilterPayload;
-import com.steampunkera.network.ServoPayload;
+import com.steampunkera.util.FilterUtil;
+import com.steampunkera.network.FilterConfigPayload;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.client.gui.DrawContext;
@@ -19,8 +18,6 @@ import java.util.List;
 
 import net.minecraft.item.Item;
 
-import static org.lwjgl.glfw.GLFW.glfwSetCursorPos;
-
 public class FilterScreen extends HandledScreen<FilterMenu> {
 
     // Текстуры
@@ -36,21 +33,21 @@ public class FilterScreen extends HandledScreen<FilterMenu> {
     
     // Размеры кнопок
     private static final int BUTTON_HEIGHT = 14;
-    private static final int BUTTON_BACK_WIDTH = 20;
+    private static final int BUTTON_CLOSE_WIDTH = 46;
     private static final int BUTTON_CLEAR_WIDTH = 20;
     
     // Позиции элементов
-    private static final int BUTTON_BACK_X = 8;
-    private static final int BUTTON_MODE_X = 48;
+    private static final int BUTTON_CLOSE_X = 8;
+    private static final int BUTTON_MODE_X = 62;
     private static final int BUTTON_CLEAR_X = 130;
     private static final int ROW_Y = 15;
-    private static final int ICON_X = 30;
+    private static final int ICON_X = 44;
     private static final int ICON_SIZE = 16;
 
-    private ServoConfig.FilterMode filterMode;
+    private FilterUtil.FilterMode filterMode;
 
     private ButtonWidget filterModeButton;
-    private ButtonWidget backButton;
+    private ButtonWidget closeButton;
     private ButtonWidget clearButton;
 
     public FilterScreen(FilterMenu menu, PlayerInventory inventory, Text title) {
@@ -61,7 +58,7 @@ public class FilterScreen extends HandledScreen<FilterMenu> {
         this.filterMode = menu.getFilterMode();
     }
 
-    public void updateFilterMode(ServoConfig.FilterMode filterMode) {
+    public void updateFilterMode(FilterUtil.FilterMode filterMode) {
         this.filterMode = filterMode;
         if (filterModeButton != null) {
             Text newText = Text.literal(filterMode.name());
@@ -75,16 +72,18 @@ public class FilterScreen extends HandledScreen<FilterMenu> {
         super.init();
         int x = (this.width - this.backgroundWidth) / 2;
         int y = (this.height - this.backgroundHeight) / 2;
-        glfwSetCursorPos(this.client.getWindow().getHandle(), handler.getMouseX(), handler.getMouseY());
         
-        // Кнопка "<-" — слева сверху
-        backButton = ButtonWidget.builder(
-                Text.literal("<-"),
-                btn -> goBack()
-        ).dimensions(x + BUTTON_BACK_X, y + ROW_Y, BUTTON_BACK_WIDTH, BUTTON_HEIGHT).build();
-        this.addDrawableChild(backButton);
+        // Не устанавливаем позицию курсора - это вызывает скачок
+        // Курсор остаётся там, где был
+        
+        // Кнопка "Close" — слева сверху (закрывает экран без возврата к сервоприводу)
+        closeButton = ButtonWidget.builder(
+                Text.literal("Close"),
+                btn -> closeScreen()
+        ).dimensions(x + BUTTON_CLOSE_X, y + ROW_Y, BUTTON_CLOSE_WIDTH, BUTTON_HEIGHT).build();
+        this.addDrawableChild(closeButton);
 
-        // Иконка режима — сразу после кнопки назад
+        // Иконка режима — сразу после кнопки
         // Рисуется в drawBackground() на x + ICON_X
         
         // Кнопка режима — справа от иконки
@@ -104,13 +103,15 @@ public class FilterScreen extends HandledScreen<FilterMenu> {
     }
 
     private void cycleFilterMode() {
-        filterMode = filterMode == ServoConfig.FilterMode.BLACKLIST ? ServoConfig.FilterMode.WHITELIST : ServoConfig.FilterMode.BLACKLIST;
+        filterMode = filterMode == FilterUtil.FilterMode.BLACKLIST ? FilterUtil.FilterMode.WHITELIST : FilterUtil.FilterMode.BLACKLIST;
         handler.setFilterMode(filterMode);
 
         Text newText = Text.literal(filterMode.name());
         filterModeButton.setMessage(newText);
         filterModeButton.setWidth(this.textRenderer.getWidth(newText) + 8);
-        sendSettings();
+        
+        // Отправляем обновление на сервер
+        sendFilterUpdate();
     }
     
     private void clearFilter() {
@@ -118,12 +119,13 @@ public class FilterScreen extends HandledScreen<FilterMenu> {
         for (int i = 0; i < 18; i++) {
             handler.getFilterInventory().setStack(i, ItemStack.EMPTY);
         }
+        
         // Отправляем пустой список на сервер
-        ClientPlayNetworking.send(new FilterPayload.UpdateFilterItems(
-                handler.getPos(), handler.getServoSide(), new ArrayList<>()));
+        ClientPlayNetworking.send(new FilterConfigPayload.UpdateFilterConfig(
+                handler.getPos(), handler.getServoSide(), filterMode, new ArrayList<>()));
     }
 
-    private void goBack() {
+    private void closeScreen() {
         // Собираем актуальные filterItems из инвентаря
         List<Item> items = new ArrayList<>();
         for (int i = 0; i < 18; i++) {
@@ -133,15 +135,26 @@ public class FilterScreen extends HandledScreen<FilterMenu> {
             }
         }
         
-        ClientPlayNetworking.send(new FilterPayload.BackToServo(
-                handler.getPos(), handler.getServoSide(), handler.isEnabled(), 
-                (int) this.client.mouse.getX(), (int) this.client.mouse.getY(),
-                filterMode, items));
+        // Отправляем закрытие с сохранением на сервер
+        ClientPlayNetworking.send(new FilterConfigPayload.CloseFilterScreen(
+                handler.getPos(), handler.getServoSide(), filterMode, items));
+        
+        // Закрываем экран
+        this.client.player.closeHandledScreen();
     }
 
-    private void sendSettings() {
-        ClientPlayNetworking.send(new ServoPayload.UpdateFilterMode(
-                handler.getPos(), handler.getServoSide(), filterMode));
+    private void sendFilterUpdate() {
+        // Собираем актуальные filterItems
+        List<Item> items = new ArrayList<>();
+        for (int i = 0; i < 18; i++) {
+            ItemStack stack = handler.getFilterInventory().getStack(i);
+            if (!stack.isEmpty()) {
+                items.add(stack.getItem());
+            }
+        }
+        
+        ClientPlayNetworking.send(new FilterConfigPayload.UpdateFilterConfig(
+                handler.getPos(), handler.getServoSide(), filterMode, items));
     }
 
     @Override
@@ -150,7 +163,7 @@ public class FilterScreen extends HandledScreen<FilterMenu> {
         int y = (this.height - this.backgroundHeight) / 2;
         context.drawTexture(RenderPipelines.GUI_TEXTURED, TEXTURE, x, y, 0f, 0f, this.backgroundWidth, this.backgroundHeight, TEXTURE_RESOLUTION, TEXTURE_RESOLUTION);
 
-        Identifier filterIcon = filterMode == ServoConfig.FilterMode.WHITELIST ? WHITELIST : BLACKLIST;
+        Identifier filterIcon = filterMode == FilterUtil.FilterMode.WHITELIST ? WHITELIST : BLACKLIST;
         context.drawTexture(RenderPipelines.GUI_TEXTURED, filterIcon, x + ICON_X, y + ROW_Y, 0, 0, ICON_SIZE, ICON_SIZE, ICON_SIZE, ICON_SIZE);
     }
 
@@ -183,8 +196,8 @@ public class FilterScreen extends HandledScreen<FilterMenu> {
             tooltipLines = this.textRenderer.wrapLines(Text.literal("Current mode: " + filterMode.name()), 150);
         } else if (filterModeButton != null && filterModeButton.isMouseOver(mouseX, mouseY)) {
             tooltipLines = this.textRenderer.wrapLines(Text.literal("Toggle between Whitelist and Blacklist mode"), 150);
-        } else if (backButton != null && backButton.isMouseOver(mouseX, mouseY)) {
-            tooltipLines = this.textRenderer.wrapLines(Text.literal("Return to servo settings"), 150);
+        } else if (closeButton != null && closeButton.isMouseOver(mouseX, mouseY)) {
+            tooltipLines = this.textRenderer.wrapLines(Text.literal("Close and save filter settings"), 150);
         } else if (clearButton != null && clearButton.isMouseOver(mouseX, mouseY)) {
             tooltipLines = this.textRenderer.wrapLines(Text.literal("Clear all filter items"), 150);
         }

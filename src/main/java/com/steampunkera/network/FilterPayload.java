@@ -6,7 +6,7 @@ import com.steampunkera.screen.filter.FilterMenuData;
 import com.steampunkera.screen.servo.ServoMenu;
 import com.steampunkera.block.entity.ItemPipeBlockEntity;
 import com.steampunkera.screen.servo.ServoMenuData;
-import com.steampunkera.util.ServoConfig;
+import com.steampunkera.util.FilterUtil;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
@@ -53,7 +53,7 @@ public final class FilterPayload {
     }
 
     public record BackToServo(BlockPos pos, Direction servoSide, boolean enabled, int mouseX, int mouseY,
-                               ServoConfig.FilterMode filterMode, List<Item> filterItems) implements CustomPayload {
+                               FilterUtil.FilterMode filterMode, List<Item> filterItems) implements CustomPayload {
         public static final Id<BackToServo> ID = new Id<>(id("back_to_servo"));
         public static final PacketCodec<RegistryByteBuf, BackToServo> CODEC = PacketCodec.of(
                 BackToServo::write, BackToServo::new
@@ -61,7 +61,7 @@ public final class FilterPayload {
 
         private BackToServo(RegistryByteBuf buf) {
             this(buf.readBlockPos(), Direction.values()[buf.readInt()], buf.readBoolean(), buf.readInt(), buf.readInt(),
-                 ServoConfig.FilterMode.values()[buf.readInt()], decodeItems(buf));
+                 FilterUtil.FilterMode.values()[buf.readInt()], decodeItems(buf));
         }
 
         private void write(RegistryByteBuf buf) {
@@ -92,7 +92,7 @@ public final class FilterPayload {
                         final int mouseY = payload.mouseY();
                         
                         // Обновляем конфиг актуальными данными из фильтра
-                        ServoConfig config = pipe.getServoConfig(servoSide)
+                        var config = pipe.getServoConfig(servoSide)
                             .withFilterMode(payload.filterMode())
                             .withFilterItems(payload.filterItems());
                         pipe.setServoConfig(servoSide, config);
@@ -152,7 +152,7 @@ public final class FilterPayload {
             ServerPlayNetworking.registerGlobalReceiver(ID, (payload, context) -> {
                 context.server().execute(() -> {
                     if (context.server().getOverworld().getBlockEntity(payload.pos()) instanceof ItemPipeBlockEntity pipe) {
-                        ServoConfig config = pipe.getServoConfig(payload.servoSide());
+                        var config = pipe.getServoConfig(payload.servoSide());
                         config = config.withFilterItems(payload.filterItems());
                         pipe.setServoConfig(payload.servoSide(), config);
                     }

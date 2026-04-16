@@ -2,9 +2,11 @@ package com.steampunkera;
 
 import com.steampunkera.block.ItemPipeBlock;
 import com.steampunkera.block.entity.ItemPipeBlockEntity;
+import com.steampunkera.item.FilterItem;
 import com.steampunkera.item.ServoItem;
 import com.steampunkera.item.WrenchItem;
 import com.steampunkera.network.ServoPayload;
+import com.steampunkera.network.FilterConfigPayload;
 import com.steampunkera.network.FilterPayload;
 import com.steampunkera.screen.servo.ServoMenuData;
 import com.steampunkera.screen.filter.FilterMenuData;
@@ -67,6 +69,13 @@ public class SteampunkEra implements ModInitializer {
 					.registryKey(RegistryKey.of(RegistryKeys.ITEM, id("servo"))))
 	);
 
+	public static final Item FILTER = Registry.register(
+			Registries.ITEM,
+			id("filter"),
+			new FilterItem(new Item.Settings()
+					.registryKey(RegistryKey.of(RegistryKeys.ITEM, id("filter"))))
+	);
+
 	public static final Block ITEM_PIPE = registerBlock(
 			"item_pipe",
 			new ItemPipeBlock(AbstractBlock.Settings.create()
@@ -91,6 +100,7 @@ public class SteampunkEra implements ModInitializer {
 						entries.add(ITEM_PIPE);
 						entries.add(WRENCH);
 						entries.add(SERVO);
+						entries.add(FILTER);
 					})
 					.build()
 	);
@@ -117,6 +127,7 @@ public class SteampunkEra implements ModInitializer {
 		FilterMenuData.init();
 		ServoPayload.register();
 		FilterPayload.init();
+		FilterConfigPayload.register();
 
 		ServerLifecycleEvents.SERVER_STOPPING.register((server) -> {
 			TICKING_PIPES.clear();

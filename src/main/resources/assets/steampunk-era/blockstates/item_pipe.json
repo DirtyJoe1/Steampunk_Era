@@ -2,22 +2,11 @@
   "multipart": [
     { "apply": { "model": "steampunk-era:block/item_pipe_center" } },
 
-    { "when": { "north": "true", "north_servo": "false" }, "apply": { "model": "steampunk-era:block/item_pipe_side", "x": 90 } },
-    { "when": { "north": "true", "north_servo": "true" }, "apply": { "model": "steampunk-era:block/item_pipe_side_servo", "x": 90 } },
-
-    { "when": { "south": "true", "south_servo": "false" }, "apply": { "model": "steampunk-era:block/item_pipe_side", "x": 270 } },
-    { "when": { "south": "true", "south_servo": "true" }, "apply": { "model": "steampunk-era:block/item_pipe_side_servo", "x": 270 } },
-
-    { "when": { "east": "true", "east_servo": "false" }, "apply": { "model": "steampunk-era:block/item_pipe_side", "x": 90, "y": 90 } },
-    { "when": { "east": "true", "east_servo": "true" }, "apply": { "model": "steampunk-era:block/item_pipe_side_servo", "x": 90, "y": 90 } },
-
-    { "when": { "west": "true", "west_servo": "false" }, "apply": { "model": "steampunk-era:block/item_pipe_side", "x": 90, "y": 270 } },
-    { "when": { "west": "true", "west_servo": "true" }, "apply": { "model": "steampunk-era:block/item_pipe_side_servo", "x": 90, "y": 270 } },
-
-    { "when": { "up": "true", "up_servo": "false" }, "apply": { "model": "steampunk-era:block/item_pipe_side" } },
-    { "when": { "up": "true", "up_servo": "true" }, "apply": { "model": "steampunk-era:block/item_pipe_side_servo" } },
-
-    { "when": { "down": "true", "down_servo": "false" }, "apply": { "model": "steampunk-era:block/item_pipe_side", "x": 180 } },
-    { "when": { "down": "true", "down_servo": "true" }, "apply": { "model": "steampunk-era:block/item_pipe_side_servo", "x": 180 } }
+    { "when": { "north": "true" }, "apply": { "model": "steampunk-era:block/item_pipe_side", "x": 90 } },
+    { "when": { "south": "true" }, "apply": { "model": "steampunk-era:block/item_pipe_side", "x": 270 } },
+    { "when": { "east": "true" }, "apply": { "model": "steampunk-era:block/item_pipe_side", "x": 90, "y": 90 } },
+    { "when": { "west": "true" }, "apply": { "model": "steampunk-era:block/item_pipe_side", "x": 90, "y": 270 } },
+    { "when": { "up": "true" }, "apply": { "model": "steampunk-era:block/item_pipe_side" } },
+    { "when": { "down": "true" }, "apply": { "model": "steampunk-era:block/item_pipe_side", "x": 180 } }
   ]
 }

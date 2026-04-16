@@ -1,5 +1,6 @@
 package com.steampunkera.screen.servo;
 
+import com.steampunkera.util.FilterUtil;
 import com.steampunkera.util.ServoConfig;
 import com.steampunkera.network.FilterPayload;
 import com.steampunkera.network.ServoPayload;
@@ -174,7 +175,7 @@ public class ServoScreen extends HandledScreen<ServoMenu> {
         Identifier routingIcon = getRoutingModeIcon(currentConfig.routingMode());
         context.drawTexture(RenderPipelines.GUI_TEXTURED, routingIcon, x + 8, y + 36, 0, 0, 16, 16, 16, 16);
 
-        Identifier filterIcon = currentConfig.filterMode() == ServoConfig.FilterMode.WHITELIST ? WHITELIST : BLACKLIST;
+        Identifier filterIcon = currentConfig.filterMode() == FilterUtil.FilterMode.WHITELIST ? WHITELIST : BLACKLIST;
         context.drawTexture(RenderPipelines.GUI_TEXTURED, filterIcon, x + 64, y + 18, 0, 0, 16, 16, 16, 16);
     }
 

@@ -4,5 +4,7 @@
   "item.steampunk-era.wrench": "Wrench",
   "item.steampunk-era.servo": "Servo",
   "item.steampunk-era.servo.desc": "Attaches to pipe connections linked to inventories",
+  "item.steampunk-era.filter": "Item Filter",
+  "item.steampunk-era.filter.desc": "Filters items passing through the pipe",
   "itemGroup.steampunk-era.steampunk_tab": "Steampunk Era"
 }

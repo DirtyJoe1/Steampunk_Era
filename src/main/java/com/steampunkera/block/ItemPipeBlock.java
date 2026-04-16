@@ -1,6 +1,9 @@
 package com.steampunkera.block;
 
+import com.steampunkera.util.FilterConfig;
 import com.steampunkera.util.ServoConfig;
+import com.steampunkera.screen.filter.FilterMenu;
+import com.steampunkera.screen.filter.FilterMenuData;
 import com.steampunkera.screen.servo.ServoMenuData.ServoData;
 import com.steampunkera.SteampunkEra;
 import com.steampunkera.block.entity.ItemPipeBlockEntity;
@@ -21,6 +24,7 @@ import net.minecraft.screen.ScreenHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
+import net.minecraft.state.property.IntProperty;
 import net.minecraft.state.property.Properties;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
@@ -44,13 +48,6 @@ public class ItemPipeBlock extends Block implements BlockEntityProvider {
     public static final BooleanProperty UP = Properties.UP;
     public static final BooleanProperty DOWN = Properties.DOWN;
 
-    public static final BooleanProperty NORTH_SERVO = BooleanProperty.of("north_servo");
-    public static final BooleanProperty SOUTH_SERVO = BooleanProperty.of("south_servo");
-    public static final BooleanProperty EAST_SERVO = BooleanProperty.of("east_servo");
-    public static final BooleanProperty WEST_SERVO = BooleanProperty.of("west_servo");
-    public static final BooleanProperty UP_SERVO = BooleanProperty.of("up_servo");
-    public static final BooleanProperty DOWN_SERVO = BooleanProperty.of("down_servo");
-
     protected static final VoxelShape CENTER = Block.createCuboidShape(5.0, 5.0, 5.0, 11.0, 11.0, 11.0);
     protected static final VoxelShape UP_SHAPE = Block.createCuboidShape(5.0, 11.0, 5.0, 11.0, 16.0, 11.0);
     protected static final VoxelShape DOWN_SHAPE = Block.createCuboidShape(5.0, 0.0, 5.0, 11.0, 5.0, 11.0);
@@ -67,13 +64,7 @@ public class ItemPipeBlock extends Block implements BlockEntityProvider {
                 .with(EAST, false)
                 .with(WEST, false)
                 .with(UP, false)
-                .with(DOWN, false)
-                .with(NORTH_SERVO, false)
-                .with(SOUTH_SERVO, false)
-                .with(EAST_SERVO, false)
-                .with(WEST_SERVO, false)
-                .with(UP_SERVO, false)
-                .with(DOWN_SERVO, false));
+                .with(DOWN, false));
     }
 
     public BooleanProperty getPropertyForDirection(Direction direction) {
@@ -87,21 +78,9 @@ public class ItemPipeBlock extends Block implements BlockEntityProvider {
         };
     }
 
-    public BooleanProperty getServoPropertyForDirection(Direction direction) {
-        return switch (direction) {
-            case NORTH -> NORTH_SERVO;
-            case SOUTH -> SOUTH_SERVO;
-            case EAST -> EAST_SERVO;
-            case WEST -> WEST_SERVO;
-            case UP -> UP_SERVO;
-            case DOWN -> DOWN_SERVO;
-        };
-    }
-
     @Override
     protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
-        builder.add(NORTH, SOUTH, EAST, WEST, UP, DOWN,
-                     NORTH_SERVO, SOUTH_SERVO, EAST_SERVO, WEST_SERVO, UP_SERVO, DOWN_SERVO);
+        builder.add(NORTH, SOUTH, EAST, WEST, UP, DOWN);
     }
 
     @Override
@@ -175,6 +154,35 @@ public class ItemPipeBlock extends Block implements BlockEntityProvider {
                     return ActionResult.FAIL;
                 }
             }
+            
+            // Если нет сервопривода, проверяем фильтр на той же стороне
+            if (be.hasFilter(side)) {
+                try {
+                    FilterConfig config = be.getFilterConfig(side);
+                    boolean enabled = true; // Фильтр всегда включен
+                    
+                    player.openHandledScreen(new ExtendedScreenHandlerFactory<FilterMenuData.FilterData>() {
+                        @Override
+                        public Text getDisplayName() {
+                            return Text.literal("Filter");
+                        }
+
+                        @Override
+                        public ScreenHandler createMenu(int syncId, PlayerInventory inv, PlayerEntity p) {
+                            return new FilterMenu(syncId, inv, pos, side, enabled, config.filterMode(), config.filterItems(), 0, 0);
+                        }
+
+                        @Override
+                        public FilterMenuData.FilterData getScreenOpeningData(ServerPlayerEntity player) {
+                            return new FilterMenuData.FilterData(pos, side, enabled, config.filterMode(), config.filterItems(), 0, 0);
+                        }
+                    });
+                    return ActionResult.SUCCESS;
+                } catch (Exception e) {
+                    SteampunkEra.LOGGER.error("[FilterMenu] Error opening GUI: {}", e.getMessage());
+                    return ActionResult.FAIL;
+                }
+            }
         }
 
         return ActionResult.PASS;
@@ -219,7 +227,6 @@ public class ItemPipeBlock extends Block implements BlockEntityProvider {
         }
         if (world.getBlockEntity(pos) instanceof ItemPipeBlockEntity pipeBE) {
             for (Direction dir : Direction.values()) {
-                newState = newState.with(getServoPropertyForDirection(dir), pipeBE.hasServo(dir));
                 if (pipeBE.hasServo(dir) && !PipeHelper.isInventoryNotAPipe(world.getBlockState(pos.offset(dir)).getBlock())) {
                     dropServo(world, pos, dir);
                     pipeBE.setServo(dir, false);
@@ -241,14 +248,9 @@ public class ItemPipeBlock extends Block implements BlockEntityProvider {
     }
 
     public void updateServoState(World world, BlockPos pos) {
-        BlockState currentState = world.getBlockState(pos);
-        if (world.getBlockEntity(pos) instanceof ItemPipeBlockEntity be) {
-            BlockState newState = currentState;
-            for (Direction dir : Direction.values()) {
-                newState = newState.with(getServoPropertyForDirection(dir), be.hasServo(dir));
-            }
-            world.setBlockState(pos, newState, 3);
-        }
+    }
+
+    public void updateFilterState(World world, BlockPos pos, Direction dir) {
     }
 
     private boolean canConnectTo(BlockView world, BlockPos pos, Direction direction) {
